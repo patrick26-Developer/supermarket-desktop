@@ -23,6 +23,8 @@ Client desktop Electron pour la gestion d'une chaîne de superettes, consommant 
 | Style | TailwindCSS v4 (`@tailwindcss/vite`, pas de `tailwind.config.js` — thème en CSS via `@theme`) |
 | Composants | shadcn/ui, style "new-york", posé manuellement (voir gotcha ci-dessous) |
 | Icônes | lucide-react |
+| Typographie | `Fraunces Variable` (titres) + `Manrope Variable` (texte), auto-hébergées via `@fontsource-variable/*` — pas de CDN à l'exécution |
+| Palette | Jetons OKLCH "épicerie fine" (vert forêt + terracotta) définis dans `src/index.css`, voir `docs/PROGRESS.md` |
 
 ## 3. Structure du dépôt
 
@@ -38,9 +40,12 @@ supermarket-desktop/
 │   ├── lib/
 │   │   ├── api.ts           # client fetch minimal vers l'API NestJS
 │   │   └── utils.ts         # cn() — helper shadcn (clsx + tailwind-merge)
-│   ├── components/ui/       # composants shadcn (Button, Input, Label, Card…)
+│   ├── components/
+│   │   ├── ui/               # composants shadcn (Button, Input, Label, Card…)
+│   │   └── AppShell.tsx      # coquille post-connexion : sidebar + nav + bloc utilisateur
 │   └── pages/
-│       └── LoginPage.tsx    # écran de connexion, câblé sur l'API
+│       ├── LoginPage.tsx     # écran de connexion plein écran (2 panneaux), câblé sur l'API
+│       └── DashboardPage.tsx # accueil post-connexion (honnête — pas de stats inventées)
 ├── forge.config.ts          # config Electron Forge (makers, fuses, plugin Vite)
 ├── forge.env.d.ts           # déclare les globales injectées par le plugin Vite
 ├── components.json          # config shadcn/ui (alias, style, base color)
