@@ -26,6 +26,9 @@ Client desktop Electron pour la gestion d'une chaîne de superettes, consommant 
 | Typographie | `Manrope Variable` seule (titres inclus), auto-hébergée via `@fontsource-variable/manrope` — pas de CDN à l'exécution |
 | Palette | Bleu/ardoise/or sourcé sur palettedecouleur.net (Palette 787), style admin panel professionnel — jetons dans `src/index.css`, détail dans `docs/PROGRESS.md` |
 | Animation | `motion` (Framer Motion), micro-interactions ciblées (transitions d'entrée, listes en cascade) — jamais sur les actions répétitives de caisse |
+| Graphiques | `recharts` — aire, barres, donut sur l'onglet Rapports |
+| Thème | Clair/sombre, `src/hooks/use-theme.ts`, persisté (`localStorage`) + `prefers-color-scheme` |
+| Internationalisation | FR/EN maison (`src/lib/i18n/`), pas de lib externe — dictionnaire + contexte React |
 
 ## 3. Structure du dépôt
 
@@ -44,27 +47,31 @@ supermarket-desktop/
 │   │   └── window-controls.d.ts
 │   ├── hooks/
 │   │   ├── use-cart.ts           # état du panier de la Caisse (lignes, totaux)
-│   │   └── use-default-store.ts  # magasin courant, dérivé de la première caisse active
+│   │   ├── use-default-store.ts  # magasin courant, dérivé de la première caisse active
+│   │   └── use-theme.ts          # thème clair/sombre, persisté
 │   ├── lib/
 │   │   ├── api.ts            # client fetch (auth Bearer + endpoints typés, tous les modules)
 │   │   ├── auth-store.ts     # jeton d'accès en mémoire
 │   │   ├── format.ts         # formatCurrency (FCFA), slugify, formatDate
-│   │   └── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
+│   │   ├── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
+│   │   └── i18n/              # I18nProvider/useI18n + dictionnaire fr/en
 │   ├── components/
-│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge…)
+│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge, Dialog…)
 │   │   ├── pos/                # ProductSearch, CartPanel — écran Caisse
 │   │   ├── purchasing/         # SuppliersSection, PurchaseOrdersSection, DeliveriesSection
-│   │   ├── TitleBar.tsx        # barre de titre custom (boutons système)
+│   │   ├── reports/            # Charts.tsx — graphiques recharts
+│   │   ├── TitleBar.tsx        # barre de titre custom (boutons système + thème + langue)
 │   │   └── AppShell.tsx        # sidebar + navigation + bloc utilisateur
 │   └── pages/
 │       ├── LoginPage.tsx      # écran de connexion plein écran (2 panneaux), câblé sur l'API
 │       ├── DashboardPage.tsx  # accueil post-connexion — résumé de ventes réel + cartes de nav
 │       ├── CashierPage.tsx    # Caisse — session, recherche produit, panier, encaissement
-│       ├── CataloguePage.tsx  # Catalogue & stock — produits, création, stock par magasin
-│       ├── PurchasingPage.tsx # Achats & livraisons — fournisseurs, commandes, réceptions, livraisons
-│       ├── ClientsPage.tsx    # Clients — liste + création (particulier/entreprise)
-│       ├── ReportsPage.tsx    # Rapports — KPI ventes, top produits, valorisation du stock
-│       └── AuditPage.tsx      # Journal d'audit — historique filtrable
+│       ├── CataloguePage.tsx  # Catalogue & stock — produits (CRUD complet), tri/filtre/recherche
+│       ├── PurchasingPage.tsx # Achats & livraisons — fournisseurs (CRUD), commandes, livraisons
+│       ├── ClientsPage.tsx    # Clients — liste + création/édition, recherche
+│       ├── ReportsPage.tsx    # Rapports — KPI, 3 graphiques, tableaux triables
+│       ├── AuditPage.tsx      # Journal d'audit — filtrable (action, ressource, recherche)
+│       └── UsersPage.tsx      # Utilisateurs (SUPER_ADMIN/ADMIN) — comptes, rôles, reset mot de passe
 ├── forge.config.ts          # config Electron Forge (makers, fuses, plugin Vite)
 ├── forge.env.d.ts           # déclare les globales injectées par le plugin Vite
 ├── components.json          # config shadcn/ui (alias, style, base color)

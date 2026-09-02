@@ -13,6 +13,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { PurchasingPage } from "@/pages/PurchasingPage";
 import { ReportsPage } from "@/pages/ReportsPage";
+import { UsersPage } from "@/pages/UsersPage";
 import type { NavTab } from "@/types/nav";
 
 const TAB_PAGES: Record<Exclude<NavTab, "dashboard">, React.ComponentType> = {
@@ -22,6 +23,7 @@ const TAB_PAGES: Record<Exclude<NavTab, "dashboard">, React.ComponentType> = {
   clients: ClientsPage,
   rapports: ReportsPage,
   audit: AuditPage,
+  users: UsersPage,
 };
 
 export function App() {

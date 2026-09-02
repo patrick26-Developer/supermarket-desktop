@@ -6,15 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CartLine } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/format";
-
-const PAYMENT_METHODS: { value: string; label: string }[] = [
-  { value: "CASH", label: "Espèces" },
-  { value: "MTN_MOMO", label: "MTN Mobile Money" },
-  { value: "AIRTEL_MONEY", label: "Airtel Money" },
-  { value: "CARD", label: "Carte bancaire" },
-  { value: "BANK_TRANSFER", label: "Virement" },
-  { value: "OTHER", label: "Autre" },
-];
+import { useI18n } from "@/lib/i18n";
 
 interface CartPanelProps {
   lines: CartLine[];
@@ -37,8 +29,18 @@ export function CartPanel({
   submitting,
   submitError,
 }: CartPanelProps) {
+  const { t, lang } = useI18n();
   const [method, setMethod] = useState("CASH");
   const [forceFailure, setForceFailure] = useState(false);
+
+  const paymentMethods: { value: string; label: string }[] = [
+    { value: "CASH", label: lang === "fr" ? "Espèces" : "Cash" },
+    { value: "MTN_MOMO", label: "MTN Mobile Money" },
+    { value: "AIRTEL_MONEY", label: "Airtel Money" },
+    { value: "CARD", label: lang === "fr" ? "Carte bancaire" : "Card" },
+    { value: "BANK_TRANSFER", label: lang === "fr" ? "Virement" : "Bank transfer" },
+    { value: "OTHER", label: lang === "fr" ? "Autre" : "Other" },
+  ];
 
   const isEmpty = lines.length === 0;
   const hasZeroPricedLine = lines.some((l) => l.unitPrice <= 0);
@@ -49,7 +51,7 @@ export function CartPanel({
         {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-muted-foreground">
             <ShoppingCart className="size-8" />
-            <p className="text-sm">Panier vide — ajoutez un produit depuis la recherche.</p>
+            <p className="text-sm">{t("caisse.cartEmpty")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -60,7 +62,7 @@ export function CartPanel({
                   <button
                     type="button"
                     onClick={() => onRemove(line.product.id)}
-                    aria-label="Retirer"
+                    aria-label={t("common.delete")}
                     className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                   >
                     <Trash2 className="size-3.5" />
@@ -68,7 +70,7 @@ export function CartPanel({
                 </div>
                 <div className="mt-2 grid grid-cols-[1fr_1fr_auto] items-end gap-2">
                   <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">Qté</Label>
+                    <Label className="text-[11px] text-muted-foreground">{t("caisse.qty")}</Label>
                     <Input
                       type="number"
                       min="0.001"
@@ -79,7 +81,7 @@ export function CartPanel({
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">Prix unitaire</Label>
+                    <Label className="text-[11px] text-muted-foreground">{t("caisse.unitPrice")}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -95,12 +97,7 @@ export function CartPanel({
                 </div>
               </div>
             ))}
-            {hasZeroPricedLine && (
-              <p className="text-xs text-muted-foreground">
-                Pas de prix par magasin pour l'instant — vérifiez le prix unitaire de chaque ligne
-                avant d'encaisser.
-              </p>
-            )}
+            {hasZeroPricedLine && <p className="text-xs text-muted-foreground">{t("caisse.priceHint")}</p>}
           </div>
         )}
       </div>
@@ -108,22 +105,22 @@ export function CartPanel({
       <div className="mt-4 shrink-0 space-y-3 border-t border-border pt-4">
         <div className="space-y-1 text-sm">
           <div className="flex justify-between text-muted-foreground">
-            <span>Sous-total</span>
+            <span>{t("caisse.subtotal")}</span>
             <span>{formatCurrency(totals.subtotal)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>TVA</span>
+            <span>{t("caisse.tax")}</span>
             <span>{formatCurrency(totals.tax)}</span>
           </div>
           <div className="flex justify-between text-base font-semibold text-foreground">
-            <span>Total</span>
+            <span>{t("caisse.total")}</span>
             <span>{formatCurrency(totals.total)}</span>
           </div>
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="payment-method" className="text-xs">
-            Mode de paiement
+            {t("caisse.paymentMethod")}
           </Label>
           <select
             id="payment-method"
@@ -131,7 +128,7 @@ export function CartPanel({
             onChange={(e) => setMethod(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
-            {PAYMENT_METHODS.map((m) => (
+            {paymentMethods.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>
@@ -147,7 +144,7 @@ export function CartPanel({
               onChange={(e) => setForceFailure(e.target.checked)}
               className="size-3.5 accent-primary"
             />
-            Simuler un échec de paiement (test — mobile money simulé)
+            {t("caisse.simulateFailure")}
           </label>
         )}
 
@@ -161,7 +158,7 @@ export function CartPanel({
           onClick={() => onCheckout(method, forceFailure)}
         >
           {submitting && <LoaderCircle className="animate-spin" />}
-          Encaisser {!isEmpty && formatCurrency(totals.total)}
+          {t("caisse.checkout")} {!isEmpty && formatCurrency(totals.total)}
         </Button>
       </div>
     </div>

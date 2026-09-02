@@ -1,5 +1,5 @@
 import { LoaderCircle, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError, type Product, type PurchaseOrder, type Supplier } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" | "destructive"> = {
   DRAFT: "neutral",
@@ -43,10 +44,18 @@ interface PurchaseOrdersSectionProps {
 }
 
 export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }: PurchaseOrdersSectionProps) {
+  const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
   const supplierById = new Map(suppliers.map((s) => [s.id, s.name]));
+
+  const filteredOrders = useMemo(
+    () => (statusFilter ? orders.filter((o) => o.status === statusFilter) : orders),
+    [orders, statusFilter],
+  );
+  const statuses = useMemo(() => [...new Set(orders.map((o) => o.status))], [orders]);
 
   async function runAction(id: string, action: "submit" | "approve" | "cancel" | "receive") {
     setBusyId(id);
@@ -77,10 +86,10 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
   return (
     <section className="mt-10">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-foreground">Commandes fournisseurs</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("purchasing.orders")}</h2>
         <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
           {showForm ? <X /> : <Plus />}
-          {showForm ? "Annuler" : "Nouvelle commande"}
+          {showForm ? t("common.cancel") : t("purchasing.newOrder")}
         </Button>
       </div>
 
@@ -97,26 +106,41 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
 
       {actionError && <p className="mt-3 text-sm text-destructive">{actionError}</p>}
 
+      {statuses.length > 1 && (
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="mt-3 flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <option value="">{t("purchasing.statusFilter")}</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s] ?? s}
+            </option>
+          ))}
+        </select>
+      )}
+
       <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card">
-        {orders.length === 0 ? (
+        {filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
             <ShoppingBag className="size-7" />
-            <p className="text-sm">Aucune commande.</p>
+            <p className="text-sm">{t("purchasing.noOrders")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
-                <th className="px-4 py-3 font-medium">Référence</th>
-                <th className="px-4 py-3 font-medium">Fournisseur</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Créée le</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colReference")}</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colSupplier")}</th>
+                <th className="px-4 py-3 font-medium">{t("common.status")}</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colTotal")}</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colCreated")}</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
+              {filteredOrders.map((o) => (
                 <tr key={o.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium text-foreground">{o.reference}</td>
                   <td className="px-4 py-3 text-muted-foreground">{supplierById.get(o.supplierId) ?? "—"}</td>
@@ -149,15 +173,16 @@ function PurchaseOrderActions({
   busy: boolean;
   onAction: (action: "submit" | "approve" | "cancel" | "receive") => void;
 }) {
+  const { t } = useI18n();
   if (busy) return <LoaderCircle className="ml-auto size-4 animate-spin text-muted-foreground" />;
   if (status === "DRAFT")
     return (
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="outline" onClick={() => onAction("cancel")}>
-          Annuler
+          {t("purchasing.cancel")}
         </Button>
         <Button size="sm" onClick={() => onAction("submit")}>
-          Soumettre
+          {t("purchasing.submit")}
         </Button>
       </div>
     );
@@ -165,17 +190,17 @@ function PurchaseOrderActions({
     return (
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="outline" onClick={() => onAction("cancel")}>
-          Annuler
+          {t("purchasing.cancel")}
         </Button>
         <Button size="sm" onClick={() => onAction("approve")}>
-          Approuver
+          {t("purchasing.approve")}
         </Button>
       </div>
     );
   if (status === "APPROVED")
     return (
       <Button size="sm" onClick={() => onAction("receive")}>
-        Réceptionner
+        {t("purchasing.receive")}
       </Button>
     );
   return null;
@@ -190,6 +215,7 @@ function NewPurchaseOrderForm({
   storeId: string;
   onCreated: () => void;
 }) {
+  const { t } = useI18n();
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
@@ -255,7 +281,7 @@ function NewPurchaseOrderForm({
   return (
     <form onSubmit={handleSubmit} className="mt-3 rounded-lg border border-border bg-card p-4">
       <div className="space-y-1.5">
-        <Label>Fournisseur</Label>
+        <Label>{t("purchasing.supplier")}</Label>
         <select
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
@@ -270,8 +296,8 @@ function NewPurchaseOrderForm({
       </div>
 
       <div className="relative mt-3">
-        <Label>Ajouter un produit</Label>
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="mt-1.5 max-w-sm" />
+        <Label>{t("purchasing.addProduct")}</Label>
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("common.search")} className="mt-1.5 max-w-sm" />
         {results.length > 0 && (
           <div className="absolute z-10 mt-1 w-full max-w-sm overflow-hidden rounded-md border border-border bg-popover shadow-md">
             {results.map((p) => (
@@ -317,7 +343,9 @@ function NewPurchaseOrderForm({
               </button>
             </div>
           ))}
-          <p className="pt-1 text-sm font-semibold text-foreground">Total : {formatCurrency(total)}</p>
+          <p className="pt-1 text-sm font-semibold text-foreground">
+            {t("purchasing.total")} : {formatCurrency(total)}
+          </p>
         </div>
       )}
 
@@ -325,7 +353,7 @@ function NewPurchaseOrderForm({
         {error && <p className="mr-auto text-sm text-destructive">{error}</p>}
         <Button type="submit" size="sm" disabled={submitting || lines.length === 0 || !supplierId}>
           {submitting && <LoaderCircle className="animate-spin" />}
-          Créer la commande
+          {t("purchasing.createOrder")}
         </Button>
       </div>
     </form>

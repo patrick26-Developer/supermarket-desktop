@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { api, ApiError, type Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 interface ProductSearchProps {
   stockByProduct: Map<string, number>;
@@ -11,6 +12,7 @@ interface ProductSearchProps {
 }
 
 export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
         const products = await api.products.search(query);
         if (!cancelled) setResults(products.filter((p) => p.status === "ACTIVE"));
       } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : "Recherche indisponible");
+        if (!cancelled) setError(err instanceof ApiError ? err.message : t("common.error"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -34,7 +36,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, t]);
 
   return (
     <div className="flex h-full flex-col">
@@ -43,7 +45,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rechercher un produit (nom, SKU)…"
+          placeholder={t("caisse.searchPlaceholder")}
           className="pl-9"
           autoFocus
         />
@@ -58,9 +60,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
         {!loading && results.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
             <PackageSearch className="size-8" />
-            <p className="text-sm">
-              {query ? "Aucun produit ne correspond." : "Tapez pour chercher un produit."}
-            </p>
+            <p className="text-sm">{query ? t("caisse.noResults") : t("caisse.typeToSearch")}</p>
           </div>
         )}
 
@@ -82,7 +82,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
                   {available !== undefined && (
                     <span className={outOfStock ? "text-destructive" : ""}>
                       {" "}
-                      · {outOfStock ? "rupture de stock" : `${available} en stock`}
+                      · {outOfStock ? t("catalogue.outOfStock") : `${available}`}
                     </span>
                   )}
                 </p>

@@ -1,19 +1,24 @@
-import { LoaderCircle, Plus, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { LoaderCircle, Pencil, Plus, Search, Users, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDefaultStore } from "@/hooks/use-default-store";
 import { api, ApiError, type Customer } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 export function ClientsPage() {
+  const { t } = useI18n();
   const { storeId, loading: storeLoading } = useDefaultStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [query, setQuery] = useState("");
 
   async function load() {
     if (!storeId) return;
@@ -33,6 +38,17 @@ export function ClientsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId]);
 
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return customers
+      .filter((c) => `${c.firstName ?? ""} ${c.lastName ?? ""} ${c.companyName ?? ""} ${c.phone ?? ""} ${c.email ?? ""}`.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const an = a.companyName || `${a.firstName ?? ""}${a.lastName ?? ""}`;
+        const bn = b.companyName || `${b.firstName ?? ""}${b.lastName ?? ""}`;
+        return an.localeCompare(bn);
+      });
+  }, [customers, query]);
+
   if (storeLoading) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -45,50 +61,56 @@ export function ClientsPage() {
     <div className="mx-auto max-w-4xl px-10 py-10">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-primary">Clients</p>
-          <h1 className="mt-1 text-2xl font-semibold text-foreground">Clientèle</h1>
+          <p className="text-sm font-medium text-primary">{t("clients.eyebrow")}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("clients.title")}</h1>
         </div>
         <Button onClick={() => setShowForm((v) => !v)}>
           {showForm ? <X /> : <Plus />}
-          {showForm ? "Annuler" : "Nouveau client"}
+          {showForm ? t("common.cancel") : t("clients.newClient")}
         </Button>
       </div>
 
       {showForm && storeId && (
-        <NewCustomerForm
+        <CustomerForm
           storeId={storeId}
-          onCreated={() => {
+          onDone={() => {
             setShowForm(false);
             load();
           }}
         />
       )}
 
+      <div className="relative mt-6">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("clients.searchPlaceholder")} className="max-w-sm pl-9" />
+      </div>
+
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-muted-foreground">
             <LoaderCircle className="size-5 animate-spin" />
           </div>
-        ) : customers.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
             <Users className="size-8" />
-            <p className="text-sm">Aucun client.</p>
+            <p className="text-sm">{t("clients.noClients")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
-                <th className="px-4 py-3 font-medium">Client</th>
-                <th className="px-4 py-3 font-medium">N°</th>
-                <th className="px-4 py-3 font-medium">Téléphone</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Type</th>
+                <th className="px-4 py-3 font-medium">{t("clients.colClient")}</th>
+                <th className="px-4 py-3 font-medium">{t("clients.colNumber")}</th>
+                <th className="px-4 py-3 font-medium">{t("clients.colPhone")}</th>
+                <th className="px-4 py-3 font-medium">{t("clients.colEmail")}</th>
+                <th className="px-4 py-3 font-medium">{t("clients.colType")}</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium text-foreground">
                     {c.companyName || `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "—"}
@@ -98,8 +120,13 @@ export function ClientsPage() {
                   <td className="px-4 py-3 text-muted-foreground">{c.email ?? "—"}</td>
                   <td className="px-4 py-3">
                     <Badge tone={c.type === "BUSINESS" ? "accent" : "neutral"}>
-                      {c.type === "BUSINESS" ? "Entreprise" : "Particulier"}
+                      {c.type === "BUSINESS" ? t("clients.business") : t("clients.individual")}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.edit")}>
+                      <Pencil className="size-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -107,16 +134,44 @@ export function ClientsPage() {
           </table>
         )}
       </div>
+
+      {editing && storeId && (
+        <Dialog open onOpenChange={(open) => !open && setEditing(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editing.companyName || `${editing.firstName ?? ""} ${editing.lastName ?? ""}`}</DialogTitle>
+            </DialogHeader>
+            <CustomerForm
+              storeId={storeId}
+              customer={editing}
+              onDone={() => {
+                setEditing(null);
+                load();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
 
-function NewCustomerForm({ storeId, onCreated }: { storeId: string; onCreated: () => void }) {
-  const [type, setType] = useState<"INDIVIDUAL" | "BUSINESS">("INDIVIDUAL");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [phone, setPhone] = useState("");
+function CustomerForm({
+  storeId,
+  customer,
+  onDone,
+}: {
+  storeId: string;
+  customer?: Customer;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const isEdit = !!customer;
+  const [type, setType] = useState<"INDIVIDUAL" | "BUSINESS">((customer?.type as "INDIVIDUAL" | "BUSINESS") ?? "INDIVIDUAL");
+  const [firstName, setFirstName] = useState(customer?.firstName ?? "");
+  const [lastName, setLastName] = useState(customer?.lastName ?? "");
+  const [companyName, setCompanyName] = useState(customer?.companyName ?? "");
+  const [phone, setPhone] = useState(customer?.phone ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -125,38 +180,39 @@ function NewCustomerForm({ storeId, onCreated }: { storeId: string; onCreated: (
     setSubmitting(true);
     setError(null);
     try {
-      await api.customers.create({
-        storeId,
+      const payload = {
         type,
         firstName: type === "INDIVIDUAL" ? firstName : undefined,
         lastName: type === "INDIVIDUAL" ? lastName : undefined,
         companyName: type === "BUSINESS" ? companyName : undefined,
         phone: phone || undefined,
-      });
-      onCreated();
+      };
+      if (isEdit && customer) await api.customers.update(customer.id, payload);
+      else await api.customers.create({ storeId, ...payload });
+      onDone();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Création impossible");
+      setError(err instanceof ApiError ? err.message : "Action impossible");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 rounded-lg border border-border bg-card p-5">
+    <form onSubmit={handleSubmit} className={isEdit ? "mt-2" : "mt-4 rounded-lg border border-border bg-card p-5"}>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => setType("INDIVIDUAL")}
           className={`rounded-md px-3 py-1.5 text-sm font-medium ${type === "INDIVIDUAL" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
         >
-          Particulier
+          {t("clients.individual")}
         </button>
         <button
           type="button"
           onClick={() => setType("BUSINESS")}
           className={`rounded-md px-3 py-1.5 text-sm font-medium ${type === "BUSINESS" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}
         >
-          Entreprise
+          {t("clients.business")}
         </button>
       </div>
 
@@ -164,22 +220,22 @@ function NewCustomerForm({ storeId, onCreated }: { storeId: string; onCreated: (
         {type === "INDIVIDUAL" ? (
           <>
             <div className="space-y-1.5">
-              <Label>Prénom</Label>
+              <Label>{t("clients.firstName")}</Label>
               <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Nom</Label>
+              <Label>{t("clients.lastName")}</Label>
               <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
           </>
         ) : (
           <div className="col-span-2 space-y-1.5">
-            <Label>Raison sociale</Label>
+            <Label>{t("clients.companyName")}</Label>
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
           </div>
         )}
         <div className="space-y-1.5">
-          <Label>Téléphone</Label>
+          <Label>{t("purchasing.phone")}</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
       </div>
@@ -188,7 +244,7 @@ function NewCustomerForm({ storeId, onCreated }: { storeId: string; onCreated: (
         {error && <p className="mr-auto text-sm text-destructive">{error}</p>}
         <Button type="submit" size="sm" disabled={submitting}>
           {submitting && <LoaderCircle className="animate-spin" />}
-          Créer
+          {isEdit ? t("common.save") : t("common.create")}
         </Button>
       </div>
     </form>

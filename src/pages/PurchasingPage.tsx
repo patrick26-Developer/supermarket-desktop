@@ -6,8 +6,10 @@ import { PurchaseOrdersSection } from "@/components/purchasing/PurchaseOrdersSec
 import { SuppliersSection } from "@/components/purchasing/SuppliersSection";
 import { useDefaultStore } from "@/hooks/use-default-store";
 import { api, ApiError, type Delivery, type PurchaseOrder, type Supplier } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 export function PurchasingPage() {
+  const { t } = useI18n();
   const { storeId, loading: storeLoading } = useDefaultStore();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -50,8 +52,8 @@ export function PurchasingPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-10 py-10 pb-16">
-      <p className="text-sm font-medium text-primary">Achats & livraisons</p>
-      <h1 className="mt-1 text-2xl font-semibold text-foreground">Fournisseurs, commandes & livraisons</h1>
+      <p className="text-sm font-medium text-primary">{t("purchasing.eyebrow")}</p>
+      <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("purchasing.title")}</h1>
 
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 

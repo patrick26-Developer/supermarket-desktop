@@ -2,6 +2,31 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-02 — Graphiques, CRUD complet, thème clair/sombre, i18n FR/EN, gestion des utilisateurs
+
+Demande groupée en une session : graphiques data-viz, tri/filtres/recherche partout, thème clair/sombre, langues FR/EN, gestion des utilisateurs par le SUPER_ADMIN, et un catalogue plus fourni pour donner de la matière à tout le reste.
+
+**Données de démonstration** — 12 produits supplémentaires créés via l'API (script jetable, pas committé) : Boissons (eau, jus, bière), Hygiène & Beauté (savon, dentifrice, papier toilette), et compléments Épicerie (lait, huile, sucre, farine, biscuits, pâtes) — 2 nouvelles catégories créées au passage. Stock initial posé via `POST /stock/movements` (`ADJUSTMENT_IN`). 14 produits au total, cohérent avec la demande "au moins 10 produits différents".
+
+**Graphiques (`recharts`)** — `src/components/reports/Charts.tsx`, 3 graphiques distincts sur l'onglet Rapports, tous sur données réelles (aucune valeur inventée) :
+- Aire — évolution du chiffre d'affaires par jour (regroupement client-side des ventes réelles via `GET /sales`, pas d'endpoint dédié côté backend)
+- Barres — produits les plus vendus par chiffre d'affaires
+- Donut — répartition de la valeur du stock par produit (top 5 + "Autres")
+
+**Tri, filtres, recherche** — ajoutés partout où c'était manquant : Catalogue (recherche, filtre catégorie, colonnes triables), Achats (recherche fournisseur, filtre statut sur les commandes), Clients (recherche), Journal d'audit (déjà un filtre action, ajout d'un filtre ressource + recherche description), Rapports (colonnes triables sur les deux tableaux).
+
+**CRUD complet** — édition/suppression ajoutées là où le backend les expose : Produits (`PUT`/`DELETE /products/:id`), Fournisseurs (`PUT`/`DELETE /suppliers/:id`), Clients (`PUT /customers/:id`, pas de suppression exposée côté backend). Nouveau composant `src/components/ui/dialog.tsx` (`@radix-ui/react-dialog`, posé à la main comme le reste des composants shadcn) pour les formulaires d'édition et les confirmations de suppression.
+
+**Thème clair/sombre** (`src/hooks/use-theme.ts`) — persiste dans `localStorage`, respecte `prefers-color-scheme` au premier lancement, bascule via une icône dans la barre de titre. Les jetons `.dark` existaient déjà dans `src/index.css` depuis la refonte de palette précédente mais n'étaient jamais activés dans l'UI — c'est fait.
+
+**Langues FR/EN** (`src/lib/i18n/`) — contexte React (`I18nProvider`/`useI18n`) + dictionnaire de traduction par clés imbriquées (`t("nav.dashboard")`), persisté dans `localStorage`, détecte la langue système au premier lancement (`navigator.language`). Bascule via un bouton "FR/EN" dans la barre de titre. Couverture : toute la navigation, les en-têtes de page, boutons, colonnes de tableau, formulaires, messages d'état vide — soit l'essentiel de l'interface. **Non traduit, en connaissance de cause** : les libellés de statut mappés en dur (ex. statuts de commande/livraison), les messages d'erreur renvoyés tels quels par le backend (générés côté serveur, en français), et le contenu saisi par l'utilisateur (noms de produits, de clients…).
+
+**Gestion des utilisateurs** (`src/pages/UsersPage.tsx`) — visible uniquement pour SUPER_ADMIN/ADMIN (contrôle côté UI ; l'application réelle des permissions reste côté backend). Liste des comptes, création (prénom/nom/email/mot de passe généré ou saisi/rôles à cocher), réinitialisation de mot de passe. **Sur "voir les identifiants de connexion"** : les mots de passe sont hachés (bcrypt) côté backend et ne sont **jamais récupérables** après coup — ce n'est pas une limitation de l'UI, c'est la seule conception saine. Le mot de passe n'est donc affiché en clair qu'**au moment de sa création ou de sa réinitialisation** (bandeau avec bouton copier), à transmettre à l'utilisateur concerné — c'est le pattern standard (GitHub, AWS, etc. font pareil pour les tokens/clés).
+
+**Vérifié de bout en bout** — build packagé, piloté par Playwright : bascule thème (classe `dark` appliquée), bascule langue (contenu FR ↔ EN confirmé), connexion, Catalogue (14 produits affichés, tri/filtre), Achats, Rapports (3 graphiques confirmés rendus — 9 éléments `svg.recharts-surface` détectés), Utilisateurs (liste réelle affichée, action reset visible). **Zéro erreur** (page, requête réseau, console) sur l'ensemble du parcours.
+
+**Note découverte en testant** : l'environnement système de cette machine a `navigator.language` en `en-US` — l'app démarre donc en anglais par défaut au tout premier lancement (avant tout choix explicite), comportement voulu (respect de la préférence système) mais qui a nécessité un ajustement du script de test (forçage de `superette:lang` dans `localStorage`) plutôt qu'une correction de l'app.
+
 ## 2026-09-02 — Les 5 onglets restants : Catalogue & stock, Achats & livraisons, Clients, Rapports, Journal d'audit
 
 Demande explicite : enchaîner tous les onglets restants sans interruption, jusqu'à couverture complète de la sidebar (7 items — Tableau de bord et Caisse déjà faits). Fait, chacun branché sur de vraies routes backend, pas des maquettes.

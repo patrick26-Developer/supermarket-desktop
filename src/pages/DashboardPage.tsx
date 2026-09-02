@@ -6,51 +6,16 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useDefaultStore } from "@/hooks/use-default-store";
 import { api, type AuthUser, type SalesSummary } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import type { NavTab } from "@/types/nav";
 
-const MODULES: { tab: NavTab; icon: typeof Boxes; title: string; description: string; tint: string }[] = [
-  {
-    tab: "caisse",
-    icon: ShoppingCart,
-    title: "Caisse",
-    description: "Recherche produit, panier, encaissement.",
-    tint: "bg-primary/10 text-primary",
-  },
-  {
-    tab: "catalogue",
-    icon: Boxes,
-    title: "Catalogue & stock",
-    description: "Produits, catégories, niveaux de stock.",
-    tint: "bg-accent/15 text-accent-foreground",
-  },
-  {
-    tab: "achats",
-    icon: Truck,
-    title: "Achats & livraisons",
-    description: "Fournisseurs, commandes, réceptions, livraisons.",
-    tint: "bg-secondary text-secondary-foreground",
-  },
-  {
-    tab: "clients",
-    icon: Users,
-    title: "Clients",
-    description: "Clientèle particulière et entreprise.",
-    tint: "bg-primary/10 text-primary",
-  },
-  {
-    tab: "rapports",
-    icon: FileBarChart,
-    title: "Rapports",
-    description: "Ventes, valorisation du stock, top produits.",
-    tint: "bg-accent/15 text-accent-foreground",
-  },
-  {
-    tab: "audit",
-    icon: ShieldCheck,
-    title: "Journal d'audit",
-    description: "Historique des actions sensibles.",
-    tint: "bg-secondary text-secondary-foreground",
-  },
+const MODULES: { tab: NavTab; icon: typeof Boxes; titleKey: string; descKey: string; tint: string }[] = [
+  { tab: "caisse", icon: ShoppingCart, titleKey: "nav.caisse", descKey: "dashboard.caisseDesc", tint: "bg-primary/10 text-primary" },
+  { tab: "catalogue", icon: Boxes, titleKey: "nav.catalogue", descKey: "dashboard.catalogueDesc", tint: "bg-accent/15 text-accent-foreground" },
+  { tab: "achats", icon: Truck, titleKey: "nav.achats", descKey: "dashboard.achatsDesc", tint: "bg-secondary text-secondary-foreground" },
+  { tab: "clients", icon: Users, titleKey: "nav.clients", descKey: "dashboard.clientsDesc", tint: "bg-primary/10 text-primary" },
+  { tab: "rapports", icon: FileBarChart, titleKey: "nav.rapports", descKey: "dashboard.rapportsDesc", tint: "bg-accent/15 text-accent-foreground" },
+  { tab: "audit", icon: ShieldCheck, titleKey: "nav.audit", descKey: "dashboard.auditDesc", tint: "bg-secondary text-secondary-foreground" },
 ];
 
 const gridVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
@@ -65,6 +30,7 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
+  const { t } = useI18n();
   const { storeId } = useDefaultStore();
   const [summary, setSummary] = useState<SalesSummary | null>(null);
 
@@ -75,21 +41,21 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
 
   return (
     <div className="mx-auto max-w-4xl px-10 py-12">
-      <p className="text-sm font-medium text-primary">Tableau de bord</p>
-      <h1 className="mt-1 text-2xl font-semibold text-foreground">Bonjour, {user.firstName}</h1>
-      <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
-        Tous les modules sont opérationnels et connectés au backend.
-      </p>
+      <p className="text-sm font-medium text-primary">{t("dashboard.eyebrow")}</p>
+      <h1 className="mt-1 text-2xl font-semibold text-foreground">
+        {t("dashboard.greeting")}, {user.firstName}
+      </h1>
+      <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">{t("dashboard.subtitle")}</p>
 
       <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
         {summary ? (
           <>
             <TrendingUp className="size-4 text-primary" />
             <span>
-              <span className="font-semibold text-foreground">{summary.salesCount}</span> vente
-              {summary.salesCount === 1 ? "" : "s"} ·{" "}
-              <span className="font-semibold text-foreground">{formatCurrency(summary.totalRevenue)}</span> de
-              chiffre d'affaires cumulé
+              <span className="font-semibold text-foreground">{summary.salesCount}</span>{" "}
+              {summary.salesCount === 1 ? t("dashboard.salesSuffix") : t("dashboard.salesSuffixPlural")} ·{" "}
+              <span className="font-semibold text-foreground">{formatCurrency(summary.totalRevenue)}</span>{" "}
+              {t("dashboard.revenueSuffix")}
             </span>
           </>
         ) : (
@@ -103,7 +69,7 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
         initial="hidden"
         animate="show"
       >
-        {MODULES.map(({ tab, icon: Icon, title, description, tint }) => (
+        {MODULES.map(({ tab, icon: Icon, titleKey, descKey, tint }) => (
           <motion.button
             key={tab}
             type="button"
@@ -116,8 +82,8 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
                 <div className={`flex size-9 items-center justify-center rounded-md ${tint}`}>
                   <Icon className="size-4.5" />
                 </div>
-                <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-                <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
+                <CardTitle className="text-sm font-semibold">{t(titleKey)}</CardTitle>
+                <CardDescription className="text-xs leading-relaxed">{t(descKey)}</CardDescription>
               </CardHeader>
             </Card>
           </motion.button>

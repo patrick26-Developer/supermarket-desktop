@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { useCart } from "@/hooks/use-cart";
 import { api, ApiError, type CashierSession, type CashRegister } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 type BootStatus = "loading" | "no-register" | "needs-open" | "ready" | "error";
 
 export function CashierPage() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<BootStatus>("loading");
   const [bootError, setBootError] = useState<string | null>(null);
   const [register, setRegister] = useState<CashRegister | null>(null);
@@ -115,11 +117,8 @@ export function CashierPage() {
     return (
       <div className="flex h-full items-center justify-center px-10 text-center">
         <div className="max-w-sm space-y-2">
-          <p className="font-medium text-foreground">Aucune caisse configurée</p>
-          <p className="text-sm text-muted-foreground">
-            Aucun <code className="rounded bg-muted px-1 py-0.5 text-xs">CashRegister</code> actif
-            n'existe pour ce magasin — créez-en une côté backend avant de pouvoir vendre.
-          </p>
+          <p className="font-medium text-foreground">{t("caisse.noRegisterTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("caisse.noRegisterDesc")}</p>
         </div>
       </div>
     );
@@ -140,13 +139,12 @@ export function CashierPage() {
           <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <LockKeyhole className="size-5" />
           </div>
-          <p className="mt-3 font-medium text-foreground">Ouvrir {register.name}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Aucune session n'est ouverte sur cette caisse. Indiquez le fond de caisse pour
-            commencer à vendre.
+          <p className="mt-3 font-medium text-foreground">
+            {t("caisse.openRegister")} {register.name}
           </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("caisse.openRegisterHint")}</p>
           <div className="mt-4 space-y-1.5">
-            <Label htmlFor="opening-amount">Fond de caisse (FCFA)</Label>
+            <Label htmlFor="opening-amount">{t("caisse.openingAmount")}</Label>
             <Input
               id="opening-amount"
               type="number"
@@ -158,7 +156,7 @@ export function CashierPage() {
           {bootError && <p className="mt-3 text-sm text-destructive">{bootError}</p>}
           <Button className="mt-4 w-full" onClick={handleOpenSession} disabled={opening}>
             {opening && <LoaderCircle className="animate-spin" />}
-            Ouvrir la caisse
+            {t("caisse.openRegister")}
           </Button>
         </div>
       </div>
@@ -175,7 +173,7 @@ export function CashierPage() {
           <div className="mb-4 flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
             <CheckCircle2 className="size-4 shrink-0" />
             <span>
-              Vente {lastSale.reference} enregistrée — {formatCurrency(lastSale.total)}
+              {t("caisse.saleRegistered")} {lastSale.reference} — {formatCurrency(lastSale.total)}
             </span>
           </div>
         )}

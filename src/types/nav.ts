@@ -5,4 +5,5 @@ export type NavTab =
   | "achats"
   | "clients"
   | "rapports"
-  | "audit";
+  | "audit"
+  | "users";

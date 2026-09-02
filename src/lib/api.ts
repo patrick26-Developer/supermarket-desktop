@@ -127,6 +127,7 @@ export interface Sale {
   orderId: string;
   reference: string;
   totalAmount: string;
+  soldAt: string;
 }
 
 export interface Category {
@@ -270,6 +271,35 @@ export interface TopProduct {
   revenue: number;
 }
 
+export interface AppUser {
+  id: string;
+  email: string;
+  phone: string | null;
+  firstName: string;
+  lastName: string;
+  status: string;
+  lastLoginAt: string | null;
+}
+
+export interface AppUserDetail extends AppUser {
+  roles: { role: { code: string; name: string } }[];
+}
+
+export interface CreateUserInput {
+  email: string;
+  phone?: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  roles?: string[];
+}
+
+export interface Role {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>("/auth/login", {
@@ -282,10 +312,15 @@ export const api = {
       request<Product[]>(`/products?search=${encodeURIComponent(query)}`),
     create: (input: CreateProductInput) =>
       request<Product>("/products", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: string, input: Partial<CreateProductInput>) =>
+      request<Product>(`/products/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    remove: (id: string) => request<void>(`/products/${id}`, { method: "DELETE" }),
   },
 
   categories: {
     list: () => request<Category[]>("/categories"),
+    create: (input: { name: string; slug: string }) =>
+      request<Category>("/categories", { method: "POST", body: JSON.stringify(input) }),
   },
 
   stock: {
@@ -312,6 +347,7 @@ export const api = {
   },
 
   sales: {
+    list: (storeId?: string) => request<Sale[]>(`/sales${storeId ? `?storeId=${storeId}` : ""}`),
     create: (input: CreateSaleInput) =>
       request<Sale>("/sales", {
         method: "POST",
@@ -323,6 +359,9 @@ export const api = {
     list: () => request<Supplier[]>("/suppliers"),
     create: (input: CreateSupplierInput) =>
       request<Supplier>("/suppliers", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: string, input: Partial<CreateSupplierInput>) =>
+      request<Supplier>(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    remove: (id: string) => request<void>(`/suppliers/${id}`, { method: "DELETE" }),
   },
 
   purchaseOrders: {
@@ -354,6 +393,30 @@ export const api = {
     list: (storeId: string) => request<Customer[]>(`/customers?storeId=${storeId}`),
     create: (input: CreateCustomerInput) =>
       request<Customer>("/customers", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: string, input: Partial<CreateCustomerInput>) =>
+      request<Customer>(`/customers/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+  },
+
+  users: {
+    list: () => request<AppUser[]>("/users"),
+    findOne: (id: string) => request<AppUserDetail>(`/users/${id}`),
+    create: (input: CreateUserInput) =>
+      request<AppUserDetail>("/users", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: string, input: Partial<{ firstName: string; lastName: string; phone: string; status: string }>) =>
+      request<AppUserDetail>(`/users/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    resetPassword: (id: string, newPassword: string) =>
+      request<{ success: true }>(`/users/${id}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ newPassword }),
+      }),
+    assignRole: (id: string, roleCode: string) =>
+      request<AppUserDetail>(`/users/${id}/roles`, { method: "POST", body: JSON.stringify({ roleCode }) }),
+    revokeRole: (id: string, roleCode: string) =>
+      request<void>(`/users/${id}/roles/${roleCode}`, { method: "DELETE" }),
+  },
+
+  roles: {
+    list: () => request<Role[]>("/roles"),
   },
 
   auditLogs: {

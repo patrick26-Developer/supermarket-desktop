@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, ApiError, type Delivery } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 const NEXT_STATUS: Record<string, string | undefined> = {
   PENDING: "ASSIGNED",
@@ -31,6 +32,7 @@ interface DeliveriesSectionProps {
 }
 
 export function DeliveriesSection({ deliveries, onChanged }: DeliveriesSectionProps) {
+  const { t } = useI18n();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,21 +51,21 @@ export function DeliveriesSection({ deliveries, onChanged }: DeliveriesSectionPr
 
   return (
     <section className="mt-10">
-      <h2 className="text-base font-semibold text-foreground">Livraisons</h2>
+      <h2 className="text-base font-semibold text-foreground">{t("purchasing.deliveries")}</h2>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
       <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card">
         {deliveries.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
             <Truck className="size-7" />
-            <p className="text-sm">Aucune livraison — créée automatiquement par une vente en mode livraison.</p>
+            <p className="text-sm">{t("purchasing.noDeliveries")}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
-                <th className="px-4 py-3 font-medium">Commande</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3 font-medium">Frais</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colOrder")}</th>
+                <th className="px-4 py-3 font-medium">{t("common.status")}</th>
+                <th className="px-4 py-3 font-medium">{t("purchasing.colFee")}</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>

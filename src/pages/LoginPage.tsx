@@ -7,17 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError, type AuthUser } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 interface LoginPageProps {
   onLoginSuccess: (user: AuthUser, accessToken: string) => void;
 }
-
-const CAPABILITIES = [
-  { icon: LayoutGrid, label: "Caisse & ventes multi-magasins" },
-  { icon: PackageSearch, label: "Stock, achats & inventaires en temps réel" },
-  { icon: Truck, label: "Clients, livraisons & suivi de statut" },
-  { icon: Receipt, label: "Journal d'audit & rapports consolidés" },
-];
 
 const listVariants = {
   hidden: {},
@@ -30,10 +24,18 @@ const itemVariants = {
 } as const;
 
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const capabilities = [
+    { icon: LayoutGrid, label: t("login.cap1") },
+    { icon: PackageSearch, label: t("login.cap2") },
+    { icon: Truck, label: t("login.cap3") },
+    { icon: Receipt, label: t("login.cap4") },
+  ];
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -43,7 +45,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       const result = await api.login(email, password);
       onLoginSuccess(result.user, result.accessToken);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Impossible de contacter le serveur");
+      setError(err instanceof ApiError ? err.message : t("login.networkError"));
     } finally {
       setLoading(false);
     }
@@ -55,21 +57,16 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       <div className="hidden bg-brand-panel px-16 py-14 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-2.5">
           <img src={logoUrl} alt="" className="size-9" />
-          <span className="text-lg font-semibold tracking-tight">Superette</span>
+          <span className="text-lg font-semibold tracking-tight">{t("appName")}</span>
         </div>
 
         <div className="max-w-md space-y-4">
-          <h1 className="text-3xl leading-tight font-semibold text-balance">
-            La gestion de votre superette, sans friction.
-          </h1>
-          <p className="text-sm leading-relaxed text-brand-panel-foreground/65">
-            Une seule plateforme pour la caisse, le stock, les achats fournisseurs et les
-            livraisons — pensée pour les commerces de proximité.
-          </p>
+          <h1 className="text-3xl leading-tight font-semibold text-balance">{t("login.tagline")}</h1>
+          <p className="text-sm leading-relaxed text-brand-panel-foreground/65">{t("login.pitch")}</p>
         </div>
 
         <motion.ul className="space-y-3.5" variants={listVariants} initial="hidden" animate="show">
-          {CAPABILITIES.map(({ icon: Icon, label }) => (
+          {capabilities.map(({ icon: Icon, label }) => (
             <motion.li
               key={label}
               variants={itemVariants}
@@ -89,17 +86,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <img src={logoUrl} alt="" className="size-8" />
-            <span className="text-lg font-semibold">Superette</span>
+            <span className="text-lg font-semibold">{t("appName")}</span>
           </div>
 
-          <h2 className="text-xl font-semibold text-foreground">Bon retour</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Connectez-vous pour accéder à votre poste de caisse.
-          </p>
+          <h2 className="text-xl font-semibold text-foreground">{t("login.welcomeBack")}</h2>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t("login.subtitle")}</p>
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -111,7 +106,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t("login.password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -139,7 +134,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <LoaderCircle className="animate-spin" />}
-              Se connecter
+              {t("login.submit")}
             </Button>
           </form>
         </div>

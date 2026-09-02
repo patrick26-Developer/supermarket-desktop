@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
+  UserCog,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -13,23 +14,24 @@ import {
 import logoUrl from "@/assets/images/logo.png";
 import { Button } from "@/components/ui/button";
 import type { AuthUser } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import type { NavTab } from "@/types/nav";
 
 interface NavItem {
   tab: NavTab;
   icon: LucideIcon;
-  label: string;
+  labelKey: string;
   available: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { tab: "dashboard", icon: LayoutDashboard, label: "Tableau de bord", available: true },
-  { tab: "caisse", icon: ShoppingCart, label: "Caisse", available: true },
-  { tab: "catalogue", icon: Boxes, label: "Catalogue & stock", available: true },
-  { tab: "achats", icon: Truck, label: "Achats & livraisons", available: true },
-  { tab: "clients", icon: Users, label: "Clients", available: true },
-  { tab: "rapports", icon: FileBarChart, label: "Rapports", available: true },
-  { tab: "audit", icon: ShieldCheck, label: "Journal d'audit", available: true },
+  { tab: "dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard", available: true },
+  { tab: "caisse", icon: ShoppingCart, labelKey: "nav.caisse", available: true },
+  { tab: "catalogue", icon: Boxes, labelKey: "nav.catalogue", available: true },
+  { tab: "achats", icon: Truck, labelKey: "nav.achats", available: true },
+  { tab: "clients", icon: Users, labelKey: "nav.clients", available: true },
+  { tab: "rapports", icon: FileBarChart, labelKey: "nav.rapports", available: true },
+  { tab: "audit", icon: ShieldCheck, labelKey: "nav.audit", available: true },
 ];
 
 function initials(user: AuthUser) {
@@ -45,16 +47,22 @@ interface AppShellProps {
 }
 
 export function AppShell({ user, activeTab, onNavigate, onLogout, children }: AppShellProps) {
+  const { t } = useI18n();
+  const canManageUsers = user.roles.includes("SUPER_ADMIN") || user.roles.includes("ADMIN");
+  const items = canManageUsers
+    ? [...NAV_ITEMS, { tab: "users" as NavTab, icon: UserCog, labelKey: "nav.users", available: true }]
+    : NAV_ITEMS;
+
   return (
     <div className="flex h-full bg-background">
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center gap-2.5 px-6 py-5">
           <img src={logoUrl} alt="" className="size-8" />
-          <span className="text-base font-semibold tracking-tight">Superette</span>
+          <span className="text-base font-semibold tracking-tight">{t("appName")}</span>
         </div>
 
         <nav className="flex-1 space-y-0.5 px-3 py-2">
-          {NAV_ITEMS.map(({ tab, icon: Icon, label, available }) => {
+          {items.map(({ tab, icon: Icon, labelKey, available }) => {
             const isActive = available && activeTab === tab;
             return (
               <button
@@ -69,10 +77,10 @@ export function AppShell({ user, activeTab, onNavigate, onLogout, children }: Ap
                 }`}
               >
                 <Icon className="size-4 shrink-0" />
-                <span className="flex-1 text-left">{label}</span>
+                <span className="flex-1 text-left">{t(labelKey)}</span>
                 {!available && (
                   <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                    Bientôt
+                    {t("nav.soon")}
                   </span>
                 )}
               </button>
@@ -94,7 +102,7 @@ export function AppShell({ user, activeTab, onNavigate, onLogout, children }: Ap
           </div>
           <Button variant="ghost" size="sm" className="mt-1 w-full justify-start" onClick={onLogout}>
             <LogOut />
-            Déconnexion
+            {t("nav.logout")}
           </Button>
         </div>
       </aside>
