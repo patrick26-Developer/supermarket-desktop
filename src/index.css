@@ -5,77 +5,80 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Palette "épicerie fine" : vert forêt profond (fraîcheur, confiance) +
- * accent terracotta chaud (chaleur, produits locaux) sur un fond ivoire —
- * volontairement à l'écart du gris/violet par défaut d'un design system IA
- * générique. OKLCH pour un contrôle perceptuel cohérent entre les teintes.
+ * Palette "grande distribution" — inspirée des enseignes de supermarché
+ * (Casino, Park'N Shop) plutôt que d'un vert clinique façon pharmacie :
+ * rouge brique en primaire (appétence, énergie, confiance commerciale),
+ * accent doré chaud (boulangerie/produits frais), fond ivoire chaleureux.
+ * Le rouge d'alerte (--destructive) est délibérément distinct du rouge de
+ * marque : plus clair, plus saturé, pour ne jamais se confondre avec un CTA.
+ * OKLCH pour un contrôle perceptuel cohérent entre les teintes.
  */
 :root {
   --radius: 0.75rem;
 
-  --background: oklch(0.98 0.008 85);
-  --foreground: oklch(0.24 0.02 145);
+  --background: oklch(0.98 0.012 70);
+  --foreground: oklch(0.22 0.02 40);
 
-  --card: oklch(1 0.004 85);
-  --card-foreground: oklch(0.24 0.02 145);
+  --card: oklch(1 0.006 70);
+  --card-foreground: oklch(0.22 0.02 40);
 
-  --popover: oklch(1 0.004 85);
-  --popover-foreground: oklch(0.24 0.02 145);
+  --popover: oklch(1 0.006 70);
+  --popover-foreground: oklch(0.22 0.02 40);
 
-  --primary: oklch(0.32 0.07 155);
-  --primary-foreground: oklch(0.98 0.008 85);
+  --primary: oklch(0.46 0.18 25);
+  --primary-foreground: oklch(0.99 0.012 70);
 
-  --secondary: oklch(0.94 0.02 85);
-  --secondary-foreground: oklch(0.28 0.03 145);
+  --secondary: oklch(0.94 0.018 65);
+  --secondary-foreground: oklch(0.3 0.03 30);
 
-  --muted: oklch(0.95 0.012 85);
-  --muted-foreground: oklch(0.48 0.02 130);
+  --muted: oklch(0.95 0.014 65);
+  --muted-foreground: oklch(0.48 0.02 45);
 
-  --accent: oklch(0.68 0.15 45);
-  --accent-foreground: oklch(0.99 0.01 85);
+  --accent: oklch(0.76 0.14 78);
+  --accent-foreground: oklch(0.26 0.03 50);
 
-  --destructive: oklch(0.55 0.21 27);
-  --destructive-foreground: oklch(0.98 0.008 85);
+  --destructive: oklch(0.58 0.22 18);
+  --destructive-foreground: oklch(0.98 0.012 70);
 
-  --border: oklch(0.89 0.015 85);
-  --input: oklch(0.89 0.015 85);
-  --ring: oklch(0.6 0.1 155);
+  --border: oklch(0.89 0.02 60);
+  --input: oklch(0.89 0.02 60);
+  --ring: oklch(0.6 0.16 25);
 
-  --brand-panel: oklch(0.24 0.05 155);
-  --brand-panel-foreground: oklch(0.96 0.02 90);
+  --brand-panel: oklch(0.26 0.11 20);
+  --brand-panel-foreground: oklch(0.97 0.02 70);
 }
 
 .dark {
-  --background: oklch(0.19 0.014 150);
-  --foreground: oklch(0.95 0.012 85);
+  --background: oklch(0.18 0.015 40);
+  --foreground: oklch(0.95 0.014 70);
 
-  --card: oklch(0.23 0.016 150);
-  --card-foreground: oklch(0.95 0.012 85);
+  --card: oklch(0.23 0.02 40);
+  --card-foreground: oklch(0.95 0.014 70);
 
-  --popover: oklch(0.23 0.016 150);
-  --popover-foreground: oklch(0.95 0.012 85);
+  --popover: oklch(0.23 0.02 40);
+  --popover-foreground: oklch(0.95 0.014 70);
 
-  --primary: oklch(0.78 0.1 150);
-  --primary-foreground: oklch(0.19 0.014 150);
+  --primary: oklch(0.62 0.19 25);
+  --primary-foreground: oklch(0.98 0.01 70);
 
-  --secondary: oklch(0.28 0.018 150);
-  --secondary-foreground: oklch(0.95 0.012 85);
+  --secondary: oklch(0.28 0.02 40);
+  --secondary-foreground: oklch(0.95 0.014 70);
 
-  --muted: oklch(0.28 0.018 150);
-  --muted-foreground: oklch(0.68 0.02 100);
+  --muted: oklch(0.28 0.02 40);
+  --muted-foreground: oklch(0.68 0.02 60);
 
-  --accent: oklch(0.72 0.16 48);
-  --accent-foreground: oklch(0.19 0.014 150);
+  --accent: oklch(0.78 0.14 78);
+  --accent-foreground: oklch(0.2 0.02 60);
 
-  --destructive: oklch(0.65 0.2 25);
-  --destructive-foreground: oklch(0.98 0.008 85);
+  --destructive: oklch(0.65 0.2 18);
+  --destructive-foreground: oklch(0.98 0.012 70);
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.6 0.1 155);
+  --ring: oklch(0.62 0.16 25);
 
-  --brand-panel: oklch(0.16 0.03 150);
-  --brand-panel-foreground: oklch(0.95 0.02 90);
+  --brand-panel: oklch(0.16 0.06 20);
+  --brand-panel-foreground: oklch(0.96 0.02 70);
 }
 
 @theme inline {

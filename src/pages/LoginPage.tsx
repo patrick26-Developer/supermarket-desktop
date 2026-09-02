@@ -1,4 +1,5 @@
 import { LayoutGrid, LoaderCircle, PackageSearch, Receipt, Store, Truck } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,16 @@ const CAPABILITIES = [
   { icon: Truck, label: "Clients, livraisons & suivi de statut" },
   { icon: Receipt, label: "Journal d'audit & rapports consolidés" },
 ];
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.35 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
+} as const;
 
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [email, setEmail] = useState("");
@@ -41,23 +52,37 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
     <div className="grid min-h-screen lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
       {/* Panneau de marque */}
       <div className="relative hidden overflow-hidden bg-brand-panel px-16 py-14 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-between">
-        <div
+        <motion.div
           aria-hidden
           className="pointer-events-none absolute -top-32 -left-24 size-[32rem] rounded-full bg-[oklch(0.68_0.15_45/0.18)] blur-3xl"
+          animate={{ x: [0, 24, 0], y: [0, 16, 0] }}
+          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
         />
-        <div
+        <motion.div
           aria-hidden
           className="pointer-events-none absolute -right-40 bottom-[-8rem] size-[28rem] rounded-full bg-[oklch(0.98_0.008_85/0.08)] blur-3xl"
+          animate={{ x: [0, -20, 0], y: [0, -14, 0] }}
+          transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        <div className="relative flex items-center gap-2.5">
+        <motion.div
+          className="relative flex items-center gap-2.5"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
           <div className="flex size-9 items-center justify-center rounded-lg bg-brand-panel-foreground/10">
             <Store className="size-5" />
           </div>
           <span className="font-display text-lg font-medium tracking-tight">Superette</span>
-        </div>
+        </motion.div>
 
-        <div className="relative max-w-md space-y-6">
+        <motion.div
+          className="relative max-w-md space-y-6"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+        >
           <h1 className="font-display text-[2.75rem] leading-[1.08] font-medium text-balance">
             La gestion de votre superette, sans friction.
           </h1>
@@ -65,23 +90,37 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             Une seule plateforme pour la caisse, le stock, les achats fournisseurs et les
             livraisons — pensée pour les commerces de proximité.
           </p>
-        </div>
+        </motion.div>
 
-        <ul className="relative space-y-4">
+        <motion.ul
+          className="relative space-y-4"
+          variants={listVariants}
+          initial="hidden"
+          animate="show"
+        >
           {CAPABILITIES.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-3 text-sm text-brand-panel-foreground/80">
+            <motion.li
+              key={label}
+              variants={itemVariants}
+              className="flex items-center gap-3 text-sm text-brand-panel-foreground/80"
+            >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-panel-foreground/10">
                 <Icon className="size-4" />
               </span>
               {label}
-            </li>
+            </motion.li>
           ))}
-        </ul>
+        </motion.ul>
       </div>
 
       {/* Panneau de connexion */}
       <div className="flex items-center justify-center bg-background px-6 py-12">
-        <div className="w-full max-w-sm">
+        <motion.div
+          className="w-full max-w-sm"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+        >
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <Store className="size-6 text-primary" />
             <span className="font-display text-lg font-medium">Superette</span>
@@ -118,18 +157,26 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               />
             </div>
 
-            {error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <LoaderCircle className="animate-spin" />}
               Se connecter
             </Button>
           </form>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

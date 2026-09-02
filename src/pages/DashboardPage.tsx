@@ -1,4 +1,5 @@
 import { Boxes, FileBarChart, ShoppingCart, Truck } from "lucide-react";
+import { motion } from "motion/react";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AuthUser } from "@/lib/api";
@@ -26,6 +27,16 @@ const UPCOMING_MODULES = [
   },
 ];
 
+const gridVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+} as const;
+
 interface DashboardPageProps {
   user: AuthUser;
 }
@@ -42,19 +53,26 @@ export function DashboardPage({ user }: DashboardPageProps) {
         prochainement — le backend qui les alimente est déjà opérationnel.
       </p>
 
-      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <motion.div
+        className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2"
+        variants={gridVariants}
+        initial="hidden"
+        animate="show"
+      >
         {UPCOMING_MODULES.map(({ icon: Icon, title, description }) => (
-          <Card key={title} className="border-border/80 py-5 shadow-none">
-            <CardHeader className="gap-2 px-5">
-              <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-                <Icon className="size-4.5" />
-              </div>
-              <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-              <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
-            </CardHeader>
-          </Card>
+          <motion.div key={title} variants={cardVariants}>
+            <Card className="border-border/80 py-5 shadow-none">
+              <CardHeader className="gap-2 px-5">
+                <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                  <Icon className="size-4.5" />
+                </div>
+                <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+                <CardDescription className="text-xs leading-relaxed">{description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
