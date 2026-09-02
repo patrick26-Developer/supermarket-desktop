@@ -23,29 +23,41 @@ Client desktop Electron pour la gestion d'une chaîne de superettes, consommant 
 | Style | TailwindCSS v4 (`@tailwindcss/vite`, pas de `tailwind.config.js` — thème en CSS via `@theme`) |
 | Composants | shadcn/ui, style "new-york", posé manuellement (voir gotcha ci-dessous) |
 | Icônes | lucide-react |
-| Typographie | `Fraunces Variable` (titres) + `Manrope Variable` (texte), auto-hébergées via `@fontsource-variable/*` — pas de CDN à l'exécution |
-| Palette | Jetons OKLCH "épicerie fine" (vert forêt + terracotta) définis dans `src/index.css`, voir `docs/PROGRESS.md` |
+| Typographie | `Manrope Variable` seule (titres inclus), auto-hébergée via `@fontsource-variable/manrope` — pas de CDN à l'exécution |
+| Palette | Bleu/ardoise/or sourcé sur palettedecouleur.net (Palette 787), style admin panel professionnel — jetons dans `src/index.css`, détail dans `docs/PROGRESS.md` |
+| Animation | `motion` (Framer Motion), micro-interactions ciblées (transitions d'entrée, listes en cascade) — jamais sur les actions répétitives de caisse |
 
 ## 3. Structure du dépôt
 
 ```
 supermarket-desktop/
 ├── src/
-│   ├── main.ts              # process main Electron — crée la BrowserWindow
-│   ├── preload.ts           # script preload (vide pour l'instant)
-│   ├── renderer.tsx         # point d'entrée du renderer — monte React dans #root
-│   ├── App.tsx              # racine React — bascule login / app selon l'état
-│   ├── vite-env.d.ts        # types Vite (import.meta.env)
-│   ├── index.css            # import Tailwind + thème shadcn (variables CSS)
+│   ├── main.ts               # process main Electron — BrowserWindow frame:false, IPC boutons système
+│   ├── preload.ts            # contextBridge — expose window.windowControls au renderer
+│   ├── renderer.tsx          # point d'entrée du renderer — monte React dans #root
+│   ├── App.tsx               # racine React — login / app + routage d'onglet (NavTab)
+│   ├── vite-env.d.ts         # types Vite (import.meta.env)
+│   ├── index.css             # import Tailwind + thème (variables CSS)
+│   ├── assets/images/        # logo.png importé par les composants (voir gotcha ci-dessous)
+│   ├── types/
+│   │   ├── nav.ts            # NavTab (onglets de la sidebar)
+│   │   └── window-controls.d.ts
+│   ├── hooks/
+│   │   └── use-cart.ts       # état du panier de la Caisse (lignes, totaux)
 │   ├── lib/
-│   │   ├── api.ts           # client fetch minimal vers l'API NestJS
-│   │   └── utils.ts         # cn() — helper shadcn (clsx + tailwind-merge)
+│   │   ├── api.ts            # client fetch (auth Bearer + endpoints typés)
+│   │   ├── auth-store.ts     # jeton d'accès en mémoire
+│   │   ├── format.ts         # formatCurrency (FCFA)
+│   │   └── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
 │   ├── components/
-│   │   ├── ui/               # composants shadcn (Button, Input, Label, Card…)
-│   │   └── AppShell.tsx      # coquille post-connexion : sidebar + nav + bloc utilisateur
+│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card…)
+│   │   ├── pos/                # ProductSearch, CartPanel — écran Caisse
+│   │   ├── TitleBar.tsx        # barre de titre custom (boutons système)
+│   │   └── AppShell.tsx        # sidebar + navigation + bloc utilisateur
 │   └── pages/
-│       ├── LoginPage.tsx     # écran de connexion plein écran (2 panneaux), câblé sur l'API
-│       └── DashboardPage.tsx # accueil post-connexion (honnête — pas de stats inventées)
+│       ├── LoginPage.tsx      # écran de connexion plein écran (2 panneaux), câblé sur l'API
+│       ├── DashboardPage.tsx  # accueil post-connexion (honnête — pas de stats inventées)
+│       └── CashierPage.tsx    # Caisse — session, recherche produit, panier, encaissement
 ├── forge.config.ts          # config Electron Forge (makers, fuses, plugin Vite)
 ├── forge.env.d.ts           # déclare les globales injectées par le plugin Vite
 ├── components.json          # config shadcn/ui (alias, style, base color)
@@ -57,7 +69,7 @@ supermarket-desktop/
 
 `src/lib/api.ts` centralise les appels HTTP. URL de base configurable via `VITE_API_URL` (variable Vite, préfixée obligatoirement), défaut `http://localhost:3000/api` (backend en dev local, voir `supermarket-backend/.env` — `PORT=3000`, `API_PREFIX=api`). Le backend a `CORS` ouvert (`origin: true`) donc aucune configuration supplémentaire n'est nécessaire côté client.
 
-Réponse de `POST /auth/login` : `{ accessToken, refreshToken, user: { id, email, firstName, lastName, roles } }`. **Pas encore fait** : stockage sécurisé du token (`safeStorage` côté process main), refresh automatique, intercepteur pour injecter le `Authorization: Bearer <token>` sur les appels suivants — le login actuel ne fait que prouver la connectivité de bout en bout.
+Réponse de `POST /auth/login` : `{ accessToken, refreshToken, user: { id, email, firstName, lastName, roles } }`. Le token est gardé en mémoire (`src/lib/auth-store.ts`) et injecté en `Authorization: Bearer` sur tous les appels suivants par `src/lib/api.ts`. **Pas encore fait** : stockage sécurisé (`safeStorage` côté process main — actuellement perdu à chaque redémarrage), refresh automatique du token expiré.
 
 ## 5. Gotchas connus (Electron Forge + Vite + Tailwind v4)
 
@@ -67,6 +79,8 @@ Voir `supermarket-backend/docs/PROGRESS.md` (entrée du 2026-09-02) pour le dét
 2. **`tsconfig.json`** doit explicitement inclure `forge.env.d.ts` (déclare `MAIN_WINDOW_VITE_DEV_SERVER_URL`/`MAIN_WINDOW_VITE_NAME`) si `include` est restreint à `src/`.
 3. Le fuse `EnableNodeCliInspectArguments: false` (activé par défaut dans `forge.config.ts`) empêche tout outil d'automatisation (Playwright, etc.) de piloter un **build packagé**. Pour des vérifications automatisées, piloter le build non packagé (`.vite/build/`, généré par `npm run package` avant l'étape de packaging) via le binaire Electron brut (`node_modules/electron/dist/electron.exe <dossier-projet>`).
 4. `npx shadcn@latest init` reste bloqué indéfiniment en environnement non interactif sur cette machine — composants posés à la main à la place (voir `components.json` et `src/components/ui/`).
+5. **Ne jamais référencer une image par chemin absolu `/...` dans un composant** (`<img src="/images/logo.png">`). Fonctionne en dev (servi par le serveur Vite, `/` a un sens), casse en build packagé (`ERR_FILE_NOT_FOUND`) : l'app packagée charge `index.html` via `file://`, où `/...` se résout à la racine du disque, pas du dossier de l'app. Toujours importer l'image comme un module (`import logoUrl from "@/assets/images/logo.png"`) — Vite réécrit alors l'URL correctement dans les deux contextes. Cette contrainte concerne spécifiquement les fichiers utilisés depuis des composants ; `index.html` lui-même peut référencer `/src/assets/...` dans un `<link>`/`<script>`, Vite le réécrit correctement au build.
+6. Un changement dans `main.ts`/`preload.ts` ne se recharge **pas** à chaud (Vite HMR ne couvre que le renderer) — un `npm start` déjà lancé doit être tué et relancé entièrement pour que ces fichiers prennent effet.
 
 ## Documents liés
 

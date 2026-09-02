@@ -10,23 +10,26 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import logoUrl from "@/assets/images/logo.png";
 import { Button } from "@/components/ui/button";
 import type { AuthUser } from "@/lib/api";
+import type { NavTab } from "@/types/nav";
 
 interface NavItem {
+  tab: NavTab;
   icon: LucideIcon;
   label: string;
   available: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: LayoutDashboard, label: "Tableau de bord", available: true },
-  { icon: ShoppingCart, label: "Caisse", available: false },
-  { icon: Boxes, label: "Catalogue & stock", available: false },
-  { icon: Truck, label: "Achats & livraisons", available: false },
-  { icon: Users, label: "Clients", available: false },
-  { icon: FileBarChart, label: "Rapports", available: false },
-  { icon: ShieldCheck, label: "Journal d'audit", available: false },
+  { tab: "dashboard", icon: LayoutDashboard, label: "Tableau de bord", available: true },
+  { tab: "caisse", icon: ShoppingCart, label: "Caisse", available: true },
+  { tab: "catalogue", icon: Boxes, label: "Catalogue & stock", available: false },
+  { tab: "achats", icon: Truck, label: "Achats & livraisons", available: false },
+  { tab: "clients", icon: Users, label: "Clients", available: false },
+  { tab: "rapports", icon: FileBarChart, label: "Rapports", available: false },
+  { tab: "audit", icon: ShieldCheck, label: "Journal d'audit", available: false },
 ];
 
 function initials(user: AuthUser) {
@@ -35,37 +38,46 @@ function initials(user: AuthUser) {
 
 interface AppShellProps {
   user: AuthUser;
+  activeTab: NavTab;
+  onNavigate: (tab: NavTab) => void;
   onLogout: () => void;
   children: React.ReactNode;
 }
 
-export function AppShell({ user, onLogout, children }: AppShellProps) {
+export function AppShell({ user, activeTab, onNavigate, onLogout, children }: AppShellProps) {
   return (
     <div className="flex h-full bg-background">
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center gap-2.5 px-6 py-5">
-          <img src="/images/logo.png" alt="" className="size-8" />
-          <span className="font-display text-base font-medium tracking-tight">Superette</span>
+          <img src={logoUrl} alt="" className="size-8" />
+          <span className="text-base font-semibold tracking-tight">Superette</span>
         </div>
 
         <nav className="flex-1 space-y-0.5 px-3 py-2">
-          {NAV_ITEMS.map(({ icon: Icon, label, available }) => (
-            <button
-              key={label}
-              type="button"
-              disabled={!available}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors data-[active=true]:bg-secondary data-[active=true]:text-secondary-foreground disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:bg-secondary enabled:hover:text-secondary-foreground"
-              data-active={available}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span className="flex-1 text-left">{label}</span>
-              {!available && (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                  Bientôt
-                </span>
-              )}
-            </button>
-          ))}
+          {NAV_ITEMS.map(({ tab, icon: Icon, label, available }) => {
+            const isActive = available && activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                disabled={!available}
+                onClick={() => available && onNavigate(tab)}
+                className={`flex w-full items-center gap-3 rounded-md border-l-2 px-2.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                  isActive
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-transparent enabled:hover:bg-secondary enabled:hover:text-secondary-foreground"
+                }`}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span className="flex-1 text-left">{label}</span>
+                {!available && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    Bientôt
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="border-t border-border p-3">
@@ -77,9 +89,7 @@ export function AppShell({ user, onLogout, children }: AppShellProps) {
               <p className="truncate text-sm font-medium">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {user.roles.join(", ")}
-              </p>
+              <p className="truncate text-xs text-muted-foreground">{user.roles.join(", ")}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="mt-1 w-full justify-start" onClick={onLogout}>

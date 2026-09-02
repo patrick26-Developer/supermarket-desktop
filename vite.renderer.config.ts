@@ -14,9 +14,14 @@ export default defineConfig(async () => {
   const { default: tailwindcss } = await import("@tailwindcss/vite");
   return {
     plugins: [tailwindcss()],
-    // Sert assets/ tel quel (logo.png/.ico) à la racine du renderer, en dev
-    // comme en build — évite de dupliquer les images dans un dossier public/.
-    publicDir: path.resolve(__dirname, "./assets"),
+    // Pas de publicDir : les images utilisées par le renderer vivent dans
+    // src/assets/ et sont importées comme des modules (voir "@/assets/...")
+    // plutôt que référencées en chemin absolu "/images/...". Un chemin
+    // absolu servi depuis un vrai serveur HTTP (dev) se résout à la racine
+    // du disque une fois l'app chargée en file:// (build packagé) —
+    // ERR_FILE_NOT_FOUND en prod. assets/images/logo.ico à la racine du
+    // projet reste utilisé tel quel par main.ts/forge.config.ts (Node pur,
+    // aucun rapport avec Vite).
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

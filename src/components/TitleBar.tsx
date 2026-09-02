@@ -1,6 +1,8 @@
 import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import logoUrl from "@/assets/images/logo.png";
+
 function TitleBarButton({
   icon: Icon,
   label,
@@ -42,10 +44,8 @@ export function TitleBar() {
       onDoubleClick={() => window.windowControls.maximizeToggle()}
     >
       <div className="flex flex-1 items-center gap-2 px-3">
-        <img src="/images/logo.png" alt="" className="size-4" />
-        <span className="font-display text-xs font-medium tracking-tight text-foreground/80">
-          Superette
-        </span>
+        <img src={logoUrl} alt="" className="size-4" />
+        <span className="text-xs font-semibold tracking-tight text-foreground/80">Superette</span>
       </div>
 
       <div className="flex h-full items-stretch">

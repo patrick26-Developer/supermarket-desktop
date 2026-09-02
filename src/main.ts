@@ -30,6 +30,11 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     // DevTools uniquement en dev — jamais dans un build packagé.
     mainWindow.webContents.openDevTools();
+    // Fait remonter la console du renderer dans le terminal — utile en dev
+    // pour déboguer sans dépendre de DevTools.
+    mainWindow.webContents.on('console-message', (event) => {
+      console.log(`[renderer:${event.level}] ${event.message} (${event.sourceId}:${event.lineNumber})`);
+    });
   } else {
     mainWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),

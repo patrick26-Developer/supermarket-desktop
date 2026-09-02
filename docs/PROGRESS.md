@@ -2,6 +2,26 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-02 — Pivot palette (retour utilisateur), barre de titre custom, module Caisse
+
+**Retour utilisateur sur le design du 2026-09-02 (entrée précédente)** : le vert forêt + accent terracotta lisait "couleur de pharmacie", pas assez "grande distribution". Nouvelle direction demandée explicitement : s'inspirer de la qualité UI/UX d'un admin panel type NiceAdmin (pas forcément son bleu littéral — clarifié en cours de session : "NiceAdmin c'est juste pour s'inspirer de la qualité du UI UX Design"), et choisir une vraie palette sourcée (pas inventée en OKLCH à la main) sur [palettedecouleur.net](https://www.palettedecouleur.net/).
+
+**Palette retenue** — Palette 787 du site : `#317AC1` (bleu, primaire), `#384454` (ardoise foncée, panneau de marque/texte), `#E1A624` (or, accent réservé aux mises en avant ponctuelles), `#D4D3DC`/`#AD956B` (neutres). Fond `#F5F6FA` (gris très clair, pas blanc pur), cartes blanches — direction "admin panel professionnel" plutôt que boutique éditoriale. `src/index.css` réécrit en conséquence (light + dark).
+
+**Typographie simplifiée** — Fraunces (serif éditorial) abandonné entièrement, `@fontsource-variable/fraunces` désinstallé. Manrope seul, y compris pour les titres (`font-semibold`/`font-bold` au lieu d'une seconde police) — cohérent avec un rendu "logiciel professionnel" plutôt que "magazine".
+
+**Écran de connexion et coquille re-stylés** — même structure (panneau de marque + formulaire), recoloré ; l'animation de dérive lente des halos décoratifs a été retirée (jugée trop "artsy" pour un logiciel de caisse). Barre latérale (`AppShell.tsx`) passée d'un indicateur actif plein fond à un **indicateur bleu à gauche de l'item actif** (pattern universel d'admin panel), navigation maintenant réellement fonctionnelle (voir plus bas).
+
+**Boutons système custom** (`src/components/TitleBar.tsx`, `src/main.ts`, `src/preload.ts`) — fenêtre passée en `frame:false`, barre de titre entièrement dessinée côté renderer (réduire/agrandir-restaurer/fermer, double-clic pour maximiser), pont `window.windowControls` exposé via `contextBridge` (le renderer n'a pas accès direct à `BrowserWindow` sous `contextIsolation`).
+
+**Logo intégré** (`assets/images/logo.{ico,png}`, fournis par l'utilisateur — un panier de courses sous un auvent, rouge brique + or, fond transparent) — vérifiés avant intégration (`.ico` : en-tête `ICONDIR` valide, une seule résolution 256×256 en PNG-compressé, fonctionnel mais pas optimal aux petites tailles ; `.png` : 1254×1254 propre). Câblés dans `main.ts` (icône fenêtre/barre des tâches), `forge.config.ts` (icône du packager + de l'installeur Squirrel), `index.html` (favicon), et dans l'UI (`TitleBar`, `AppShell`, `LoginPage`).
+
+**Piège rencontré : image cassée en build packagé, invisible en dev** — `<img src="/images/logo.png">` fonctionne en dev (servi par le serveur Vite, la racine `/` a un sens) mais casse en production (`ERR_FILE_NOT_FOUND`) : l'app packagée charge `index.html` via `file://`, où un chemin commençant par `/` se résout à la racine du **disque**, pas du dossier de l'app. Corrigé en import Vite standard (`import logoUrl from "@/assets/images/logo.png"`, fichier déplacé dans `src/assets/`) plutôt qu'un chemin `publicDir` absolu — Vite réécrit alors l'URL correctement dans les deux contextes. Retenir : **ne jamais référencer une image par chemin absolu `/...` dans un composant** d'une app Electron packagée ; toujours passer par un import de module.
+
+**Premier onglet fonctionnel : Caisse** (`src/pages/CashierPage.tsx`, `src/components/pos/`, `src/hooks/use-cart.ts`) — flux de vente réel, pas une maquette : ouverture/reprise de session de caisse (`GET/POST /api/cash-sessions`), recherche produit avec debounce (`GET /api/products?search=`) affichant le stock réel par magasin (`GET /api/stock`), panier éditable (quantité/prix unitaire — **pas de prix par magasin côté backend**, le prix est pré-rempli avec `costPrice` mais le caissier doit le confirmer, message explicite dans l'UI), calcul de sous-total/TVA/total répliquant exactement la logique serveur, choix du mode de paiement (avec case "simuler un échec" pour les méthodes mobile money simulées), `POST /api/sales` sur "Encaisser". **Vérifié de bout en bout contre le vrai backend** : vente réelle passée (Riz 5kg, 3500 FCFA), stock décrémenté 147→146, panier vidé après succès.
+
+**Jeton d'authentification enfin propagé** (`src/lib/auth-store.ts`) — jusqu'ici le token reçu au login n'était jamais réutilisé pour les appels suivants (gap silencieux depuis le scaffold initial). Stocké en mémoire seulement (pas de `safeStorage`, toujours pas fait), attaché en `Authorization: Bearer` par `src/lib/api.ts`.
+
 ## 2026-09-02 — Design system premium (typographie, palette, layout)
 
 Refonte visuelle complète, à la demande explicite d'un rendu "premium" plutôt que le style shadcn par défaut (gris neutre, police système). Choix délibérément appliqués **sans dépendre d'une skill de design externe** (voir discussion avec l'utilisateur — les skills communautaires non vérifiées comportent un risque réel d'injection de prompt).

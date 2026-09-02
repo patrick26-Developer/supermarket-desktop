@@ -1,84 +1,81 @@
 @import "tailwindcss";
-@import "@fontsource-variable/fraunces";
 @import "@fontsource-variable/manrope";
 
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Palette "grande distribution" — inspirée des enseignes de supermarché
- * (Casino, Park'N Shop) plutôt que d'un vert clinique façon pharmacie :
- * rouge brique en primaire (appétence, énergie, confiance commerciale),
- * accent doré chaud (boulangerie/produits frais), fond ivoire chaleureux.
- * Le rouge d'alerte (--destructive) est délibérément distinct du rouge de
- * marque : plus clair, plus saturé, pour ne jamais se confondre avec un CTA.
- * OKLCH pour un contrôle perceptuel cohérent entre les teintes.
+ * Palette sourcée sur palettedecouleur.net (Palette 787 : #317AC1, #384454,
+ * #E1A624, #D4D3DC, #AD956B) — direction "admin panel professionnel" façon
+ * NiceAdmin plutôt que boutique éditoriale : bleu franc en primaire, ardoise
+ * foncée pour les textes/titres, or chaud réservé aux accents ponctuels
+ * (badges, mises en avant), surfaces claires et neutres.
  */
 :root {
-  --radius: 0.75rem;
+  --radius: 0.6rem;
 
-  --background: oklch(0.98 0.012 70);
-  --foreground: oklch(0.22 0.02 40);
+  --background: #f5f6fa;
+  --foreground: #384454;
 
-  --card: oklch(1 0.006 70);
-  --card-foreground: oklch(0.22 0.02 40);
+  --card: #ffffff;
+  --card-foreground: #384454;
 
-  --popover: oklch(1 0.006 70);
-  --popover-foreground: oklch(0.22 0.02 40);
+  --popover: #ffffff;
+  --popover-foreground: #384454;
 
-  --primary: oklch(0.46 0.18 25);
-  --primary-foreground: oklch(0.99 0.012 70);
+  --primary: #317ac1;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.94 0.018 65);
-  --secondary-foreground: oklch(0.3 0.03 30);
+  --secondary: #eef1f6;
+  --secondary-foreground: #384454;
 
-  --muted: oklch(0.95 0.014 65);
-  --muted-foreground: oklch(0.48 0.02 45);
+  --muted: #eef1f6;
+  --muted-foreground: #6b7688;
 
-  --accent: oklch(0.76 0.14 78);
-  --accent-foreground: oklch(0.26 0.03 50);
+  --accent: #e1a624;
+  --accent-foreground: #3a2c06;
 
-  --destructive: oklch(0.58 0.22 18);
-  --destructive-foreground: oklch(0.98 0.012 70);
+  --destructive: #d33f49;
+  --destructive-foreground: #ffffff;
 
-  --border: oklch(0.89 0.02 60);
-  --input: oklch(0.89 0.02 60);
-  --ring: oklch(0.6 0.16 25);
+  --border: #e2e5ec;
+  --input: #e2e5ec;
+  --ring: #317ac1;
 
-  --brand-panel: oklch(0.26 0.11 20);
-  --brand-panel-foreground: oklch(0.97 0.02 70);
+  --brand-panel: #384454;
+  --brand-panel-foreground: #f5f6fa;
 }
 
 .dark {
-  --background: oklch(0.18 0.015 40);
-  --foreground: oklch(0.95 0.014 70);
+  --background: #171c26;
+  --foreground: #e7e9ee;
 
-  --card: oklch(0.23 0.02 40);
-  --card-foreground: oklch(0.95 0.014 70);
+  --card: #1e2530;
+  --card-foreground: #e7e9ee;
 
-  --popover: oklch(0.23 0.02 40);
-  --popover-foreground: oklch(0.95 0.014 70);
+  --popover: #1e2530;
+  --popover-foreground: #e7e9ee;
 
-  --primary: oklch(0.62 0.19 25);
-  --primary-foreground: oklch(0.98 0.01 70);
+  --primary: #4f93d6;
+  --primary-foreground: #0d1420;
 
-  --secondary: oklch(0.28 0.02 40);
-  --secondary-foreground: oklch(0.95 0.014 70);
+  --secondary: #262e3b;
+  --secondary-foreground: #e7e9ee;
 
-  --muted: oklch(0.28 0.02 40);
-  --muted-foreground: oklch(0.68 0.02 60);
+  --muted: #262e3b;
+  --muted-foreground: #9aa3b2;
 
-  --accent: oklch(0.78 0.14 78);
-  --accent-foreground: oklch(0.2 0.02 60);
+  --accent: #e8b84b;
+  --accent-foreground: #241a02;
 
-  --destructive: oklch(0.65 0.2 18);
-  --destructive-foreground: oklch(0.98 0.012 70);
+  --destructive: #e2565f;
+  --destructive-foreground: #0d1420;
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.62 0.16 25);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #4f93d6;
 
-  --brand-panel: oklch(0.16 0.06 20);
-  --brand-panel-foreground: oklch(0.96 0.02 70);
+  --brand-panel: #10151e;
+  --brand-panel-foreground: #e7e9ee;
 }
 
 @theme inline {
@@ -110,7 +107,6 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: "Manrope Variable", "Segoe UI", -apple-system, sans-serif;
-  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -121,10 +117,5 @@
     @apply bg-background text-foreground;
     margin: 0;
     font-family: var(--font-sans);
-    font-feature-settings: "ss01" 1;
-  }
-  h1, h2, h3, .font-display {
-    font-family: var(--font-display);
-    font-optical-sizing: auto;
   }
 }
