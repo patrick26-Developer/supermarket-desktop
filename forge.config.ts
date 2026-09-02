@@ -10,10 +10,14 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Extension ajoutée automatiquement par la plateforme (.ico sur
+    // Windows) — seul assets/images/logo.ico existe pour l'instant, ciblé
+    // sur Windows (voir makers ci-dessous).
+    icon: './assets/images/logo',
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({ setupIcon: './assets/images/logo.ico' }),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({}),
     new MakerDeb({}),

@@ -1,4 +1,4 @@
-import { LayoutGrid, LoaderCircle, PackageSearch, Receipt, Store, Truck } from "lucide-react";
+import { LayoutGrid, LoaderCircle, PackageSearch, Receipt, Truck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState, type FormEvent } from "react";
 
@@ -71,9 +71,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-brand-panel-foreground/10">
-            <Store className="size-5" />
-          </div>
+          <img src="/images/logo.png" alt="" className="size-9" />
           <span className="font-display text-lg font-medium tracking-tight">Superette</span>
         </motion.div>
 
@@ -122,7 +120,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
         >
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <Store className="size-6 text-primary" />
+            <img src="/images/logo.png" alt="" className="size-8" />
             <span className="font-display text-lg font-medium">Superette</span>
           </div>
 

@@ -5,7 +5,6 @@ import {
   LogOut,
   ShieldCheck,
   ShoppingCart,
-  Store,
   Truck,
   Users,
   type LucideIcon,
@@ -45,9 +44,7 @@ export function AppShell({ user, onLogout, children }: AppShellProps) {
     <div className="flex h-full bg-background">
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center gap-2.5 px-6 py-5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Store className="size-4.5" />
-          </div>
+          <img src="/images/logo.png" alt="" className="size-8" />
           <span className="font-display text-base font-medium tracking-tight">Superette</span>
         </div>
 

@@ -17,6 +17,9 @@ const createWindow = () => {
     minWidth: 1024,
     minHeight: 640,
     frame: false,
+    // __dirname pointe vers .vite/build (dev) ou .../app.asar/.vite/build
+    // (packagé) — remonter à la racine du projet dans les deux cas.
+    icon: path.join(__dirname, '../../assets/images/logo.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },

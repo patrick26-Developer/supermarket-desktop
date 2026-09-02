@@ -1,4 +1,4 @@
-import { Copy, Minus, Square, Store, X } from "lucide-react";
+import { Copy, Minus, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function TitleBarButton({
@@ -42,7 +42,7 @@ export function TitleBar() {
       onDoubleClick={() => window.windowControls.maximizeToggle()}
     >
       <div className="flex flex-1 items-center gap-2 px-3">
-        <Store className="size-3.5 text-primary" />
+        <img src="/images/logo.png" alt="" className="size-4" />
         <span className="font-display text-xs font-medium tracking-tight text-foreground/80">
           Superette
         </span>

@@ -14,6 +14,9 @@ export default defineConfig(async () => {
   const { default: tailwindcss } = await import("@tailwindcss/vite");
   return {
     plugins: [tailwindcss()],
+    // Sert assets/ tel quel (logo.png/.ico) à la racine du renderer, en dev
+    // comme en build — évite de dupliquer les images dans un dossier public/.
+    publicDir: path.resolve(__dirname, "./assets"),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
