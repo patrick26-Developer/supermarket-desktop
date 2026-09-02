@@ -42,7 +42,7 @@ interface AppShellProps {
 
 export function AppShell({ user, onLogout, children }: AppShellProps) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-full bg-background">
       <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card">
         <div className="flex items-center gap-2.5 px-6 py-5">
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

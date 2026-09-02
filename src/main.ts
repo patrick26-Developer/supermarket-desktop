@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -8,12 +8,15 @@ if (started) {
 }
 
 const createWindow = () => {
-  // Create the browser window.
+  // Fenêtre sans chrome natif : la barre de titre (boutons système inclus)
+  // est dessinée côté renderer (src/components/TitleBar.tsx) pour rester
+  // cohérente avec le design de l'app plutôt que le chrome Windows par défaut.
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 1024,
     minHeight: 640,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -29,7 +32,31 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
+
+  const notifyMaximizedState = () => {
+    mainWindow.webContents.send('window:maximized-changed', mainWindow.isMaximized());
+  };
+  mainWindow.on('maximize', notifyMaximizedState);
+  mainWindow.on('unmaximize', notifyMaximizedState);
 };
+
+// IPC des boutons système (voir preload.ts pour le pont contextBridge) —
+// un seul handler par action, appliqué à la fenêtre qui a émis l'appel.
+ipcMain.on('window:minimize', (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.minimize();
+});
+ipcMain.on('window:maximize-toggle', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+});
+ipcMain.on('window:close', (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.close();
+});
+ipcMain.handle('window:is-maximized', (event) => {
+  return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false;
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
