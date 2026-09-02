@@ -2,6 +2,26 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-02 — Les 5 onglets restants : Catalogue & stock, Achats & livraisons, Clients, Rapports, Journal d'audit
+
+Demande explicite : enchaîner tous les onglets restants sans interruption, jusqu'à couverture complète de la sidebar (7 items — Tableau de bord et Caisse déjà faits). Fait, chacun branché sur de vraies routes backend, pas des maquettes.
+
+**`src/lib/api.ts` étendu** — types + méthodes pour `categories`, `suppliers`, `purchaseOrders`, `goodsReceipts`, `deliveries`, `customers`, `auditLogs`, `reports` (sales-summary/stock-value/top-products). `src/hooks/use-default-store.ts` (nouveau) — dérive le magasin courant depuis la première caisse active, réutilisé par tous les nouveaux onglets (toujours pas d'endpoint `/stores` ni de sélecteur multi-magasin côté backend, V1 mono-magasin assumée). `src/components/ui/badge.tsx` (nouveau) — pastilles de statut réutilisées partout (commandes, livraisons, type client, action d'audit).
+
+**Catalogue & stock** (`CataloguePage.tsx`) — liste produits (recherche, catégorie, coût, TVA, stock réel par magasin, statut), formulaire de création inline (slug auto-généré depuis le nom).
+
+**Achats & livraisons** (`PurchasingPage.tsx` + `components/purchasing/`) — trois sections : Fournisseurs (liste + création), Commandes fournisseurs (liste avec statut, création avec recherche produit + lignes qté/coût éditables, actions contextuelles selon statut — Soumettre/Approuver/Annuler/Réceptionner ; "Réceptionner" récupère les lignes de la commande via `GET /purchase-orders/:id` et poste une réception avec les mêmes quantités), Livraisons (liste + bouton d'avancement de statut au prochain palier).
+
+**Clients** (`ClientsPage.tsx`) — liste + création (bascule Particulier/Entreprise, champs adaptés).
+
+**Rapports** (`ReportsPage.tsx`) — cartes KPI (ventes, chiffre d'affaires, panier moyen, TVA collectée) + tableau produits les plus vendus + tableau de valorisation du stock, tous sur données réelles (`/reports/*`).
+
+**Journal d'audit** (`AuditPage.tsx`) — liste filtrable par action, connectée à `/audit-logs`.
+
+**Tableau de bord retravaillé** — les cartes "modules à venir" n'avaient plus de sens une fois tous les onglets construits : remplacées par des cartes cliquables vers chaque onglet (navigation réelle, `onNavigate` maintenant remonté dans `App.tsx`) + un résumé de ventes en direct (réutilise `/reports/sales-summary`).
+
+**Vérifié de bout en bout, les 5 onglets, en une passe** — build packagé, piloté par Playwright : connexion → clic sur chaque onglet → attente du contenu réel → capture. **Zéro erreur** (page, requête réseau, console) sur l'ensemble du parcours. Données réelles observées : fournisseur "Grossiste Congo", commande `PO-...` au statut REÇU (160 000 FCFA), 2 livraisons (une EN ATTENTE, une LIVRÉE), client "Jean Mabiala", rapport de ventes cohérent avec les tests de la session précédente (12 ventes, valorisation du stock 511 000 FCFA).
+
 ## 2026-09-02 — Pivot palette (retour utilisateur), barre de titre custom, module Caisse
 
 **Retour utilisateur sur le design du 2026-09-02 (entrée précédente)** : le vert forêt + accent terracotta lisait "couleur de pharmacie", pas assez "grande distribution". Nouvelle direction demandée explicitement : s'inspirer de la qualité UI/UX d'un admin panel type NiceAdmin (pas forcément son bleu littéral — clarifié en cours de session : "NiceAdmin c'est juste pour s'inspirer de la qualité du UI UX Design"), et choisir une vraie palette sourcée (pas inventée en OKLCH à la main) sur [palettedecouleur.net](https://www.palettedecouleur.net/).

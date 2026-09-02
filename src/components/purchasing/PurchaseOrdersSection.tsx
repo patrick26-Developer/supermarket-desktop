@@ -1,0 +1,333 @@
+import { LoaderCircle, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { api, ApiError, type Product, type PurchaseOrder, type Supplier } from "@/lib/api";
+import { formatCurrency, formatDate } from "@/lib/format";
+
+const STATUS_TONE: Record<string, "neutral" | "primary" | "accent" | "success" | "destructive"> = {
+  DRAFT: "neutral",
+  SUBMITTED: "accent",
+  APPROVED: "primary",
+  PARTIALLY_RECEIVED: "primary",
+  RECEIVED: "success",
+  CANCELLED: "destructive",
+  CLOSED: "neutral",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  DRAFT: "Brouillon",
+  SUBMITTED: "Soumis",
+  APPROVED: "Approuvé",
+  PARTIALLY_RECEIVED: "Partiellement reçu",
+  RECEIVED: "Reçu",
+  CANCELLED: "Annulé",
+  CLOSED: "Clôturé",
+};
+
+interface Line {
+  productId: string;
+  name: string;
+  quantity: number;
+  unitCost: number;
+}
+
+interface PurchaseOrdersSectionProps {
+  orders: PurchaseOrder[];
+  suppliers: Supplier[];
+  storeId: string;
+  onChanged: () => void;
+}
+
+export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }: PurchaseOrdersSectionProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const supplierById = new Map(suppliers.map((s) => [s.id, s.name]));
+
+  async function runAction(id: string, action: "submit" | "approve" | "cancel" | "receive") {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      if (action === "receive") {
+        const order = await api.purchaseOrders.findOne(id);
+        await api.goodsReceipts.create({
+          storeId: order.storeId,
+          purchaseOrderId: id,
+          items: (order.items ?? []).map((i) => ({
+            productId: i.productId,
+            quantity: Number(i.quantity),
+            unitCost: Number(i.unitCost),
+          })),
+        });
+      } else {
+        await api.purchaseOrders[action](id);
+      }
+      onChanged();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Action impossible");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <section className="mt-10">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-foreground">Commandes fournisseurs</h2>
+        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? <X /> : <Plus />}
+          {showForm ? "Annuler" : "Nouvelle commande"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <NewPurchaseOrderForm
+          suppliers={suppliers}
+          storeId={storeId}
+          onCreated={() => {
+            setShowForm(false);
+            onChanged();
+          }}
+        />
+      )}
+
+      {actionError && <p className="mt-3 text-sm text-destructive">{actionError}</p>}
+
+      <div className="mt-3 overflow-hidden rounded-lg border border-border bg-card">
+        {orders.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+            <ShoppingBag className="size-7" />
+            <p className="text-sm">Aucune commande.</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
+                <th className="px-4 py-3 font-medium">Référence</th>
+                <th className="px-4 py-3 font-medium">Fournisseur</th>
+                <th className="px-4 py-3 font-medium">Statut</th>
+                <th className="px-4 py-3 font-medium">Total</th>
+                <th className="px-4 py-3 font-medium">Créée le</th>
+                <th className="px-4 py-3 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr key={o.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3 font-medium text-foreground">{o.reference}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{supplierById.get(o.supplierId) ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <Badge tone={STATUS_TONE[o.status] ?? "neutral"}>
+                      {STATUS_LABEL[o.status] ?? o.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">{formatCurrency(Number(o.totalAmount))}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(o.createdAt)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <PurchaseOrderActions status={o.status} busy={busyId === o.id} onAction={(a) => runAction(o.id, a)} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PurchaseOrderActions({
+  status,
+  busy,
+  onAction,
+}: {
+  status: string;
+  busy: boolean;
+  onAction: (action: "submit" | "approve" | "cancel" | "receive") => void;
+}) {
+  if (busy) return <LoaderCircle className="ml-auto size-4 animate-spin text-muted-foreground" />;
+  if (status === "DRAFT")
+    return (
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => onAction("cancel")}>
+          Annuler
+        </Button>
+        <Button size="sm" onClick={() => onAction("submit")}>
+          Soumettre
+        </Button>
+      </div>
+    );
+  if (status === "SUBMITTED")
+    return (
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => onAction("cancel")}>
+          Annuler
+        </Button>
+        <Button size="sm" onClick={() => onAction("approve")}>
+          Approuver
+        </Button>
+      </div>
+    );
+  if (status === "APPROVED")
+    return (
+      <Button size="sm" onClick={() => onAction("receive")}>
+        Réceptionner
+      </Button>
+    );
+  return null;
+}
+
+function NewPurchaseOrderForm({
+  suppliers,
+  storeId,
+  onCreated,
+}: {
+  suppliers: Supplier[];
+  storeId: string;
+  onCreated: () => void;
+}) {
+  const [supplierId, setSupplierId] = useState(suppliers[0]?.id ?? "");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Product[]>([]);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const products = await api.products.search(query);
+        if (!cancelled) setResults(products.slice(0, 6));
+      } catch {
+        /* ignore, recherche best-effort */
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  function addLine(product: Product) {
+    setLines((prev) =>
+      prev.some((l) => l.productId === product.id)
+        ? prev
+        : [...prev, { productId: product.id, name: product.name, quantity: 1, unitCost: Number(product.costPrice) }],
+    );
+    setQuery("");
+    setResults([]);
+  }
+
+  function updateLine(productId: string, patch: Partial<Line>) {
+    setLines((prev) => prev.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
+  }
+
+  const total = lines.reduce((sum, l) => sum + l.quantity * l.unitCost, 0);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (lines.length === 0 || !supplierId) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.purchaseOrders.create({
+        storeId,
+        supplierId,
+        items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity, unitCost: l.unitCost })),
+      });
+      onCreated();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Création impossible");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 rounded-lg border border-border bg-card p-4">
+      <div className="space-y-1.5">
+        <Label>Fournisseur</Label>
+        <select
+          value={supplierId}
+          onChange={(e) => setSupplierId(e.target.value)}
+          className="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          {suppliers.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="relative mt-3">
+        <Label>Ajouter un produit</Label>
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="mt-1.5 max-w-sm" />
+        {results.length > 0 && (
+          <div className="absolute z-10 mt-1 w-full max-w-sm overflow-hidden rounded-md border border-border bg-popover shadow-md">
+            {results.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => addLine(p)}
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-secondary"
+              >
+                <span>{p.name}</span>
+                <span className="text-xs text-muted-foreground">{p.sku}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {lines.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {lines.map((l) => (
+            <div key={l.productId} className="grid grid-cols-[1fr_5rem_7rem_auto] items-center gap-2 text-sm">
+              <span className="truncate text-foreground">{l.name}</span>
+              <Input
+                type="number"
+                min="0.001"
+                value={l.quantity}
+                onChange={(e) => updateLine(l.productId, { quantity: Number(e.target.value) })}
+                className="h-8"
+              />
+              <Input
+                type="number"
+                min="0"
+                value={l.unitCost}
+                onChange={(e) => updateLine(l.productId, { unitCost: Number(e.target.value) })}
+                className="h-8"
+              />
+              <button
+                type="button"
+                onClick={() => setLines((prev) => prev.filter((x) => x.productId !== l.productId))}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+          <p className="pt-1 text-sm font-semibold text-foreground">Total : {formatCurrency(total)}</p>
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center gap-2">
+        {error && <p className="mr-auto text-sm text-destructive">{error}</p>}
+        <Button type="submit" size="sm" disabled={submitting || lines.length === 0 || !supplierId}>
+          {submitting && <LoaderCircle className="animate-spin" />}
+          Créer la commande
+        </Button>
+      </div>
+    </form>
+  );
+}

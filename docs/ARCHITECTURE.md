@@ -43,21 +43,28 @@ supermarket-desktop/
 │   │   ├── nav.ts            # NavTab (onglets de la sidebar)
 │   │   └── window-controls.d.ts
 │   ├── hooks/
-│   │   └── use-cart.ts       # état du panier de la Caisse (lignes, totaux)
+│   │   ├── use-cart.ts           # état du panier de la Caisse (lignes, totaux)
+│   │   └── use-default-store.ts  # magasin courant, dérivé de la première caisse active
 │   ├── lib/
-│   │   ├── api.ts            # client fetch (auth Bearer + endpoints typés)
+│   │   ├── api.ts            # client fetch (auth Bearer + endpoints typés, tous les modules)
 │   │   ├── auth-store.ts     # jeton d'accès en mémoire
-│   │   ├── format.ts         # formatCurrency (FCFA)
+│   │   ├── format.ts         # formatCurrency (FCFA), slugify, formatDate
 │   │   └── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
 │   ├── components/
-│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card…)
+│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge…)
 │   │   ├── pos/                # ProductSearch, CartPanel — écran Caisse
+│   │   ├── purchasing/         # SuppliersSection, PurchaseOrdersSection, DeliveriesSection
 │   │   ├── TitleBar.tsx        # barre de titre custom (boutons système)
 │   │   └── AppShell.tsx        # sidebar + navigation + bloc utilisateur
 │   └── pages/
 │       ├── LoginPage.tsx      # écran de connexion plein écran (2 panneaux), câblé sur l'API
-│       ├── DashboardPage.tsx  # accueil post-connexion (honnête — pas de stats inventées)
-│       └── CashierPage.tsx    # Caisse — session, recherche produit, panier, encaissement
+│       ├── DashboardPage.tsx  # accueil post-connexion — résumé de ventes réel + cartes de nav
+│       ├── CashierPage.tsx    # Caisse — session, recherche produit, panier, encaissement
+│       ├── CataloguePage.tsx  # Catalogue & stock — produits, création, stock par magasin
+│       ├── PurchasingPage.tsx # Achats & livraisons — fournisseurs, commandes, réceptions, livraisons
+│       ├── ClientsPage.tsx    # Clients — liste + création (particulier/entreprise)
+│       ├── ReportsPage.tsx    # Rapports — KPI ventes, top produits, valorisation du stock
+│       └── AuditPage.tsx      # Journal d'audit — historique filtrable
 ├── forge.config.ts          # config Electron Forge (makers, fuses, plugin Vite)
 ├── forge.env.d.ts           # déclare les globales injectées par le plugin Vite
 ├── components.json          # config shadcn/ui (alias, style, base color)
@@ -70,6 +77,8 @@ supermarket-desktop/
 `src/lib/api.ts` centralise les appels HTTP. URL de base configurable via `VITE_API_URL` (variable Vite, préfixée obligatoirement), défaut `http://localhost:3000/api` (backend en dev local, voir `supermarket-backend/.env` — `PORT=3000`, `API_PREFIX=api`). Le backend a `CORS` ouvert (`origin: true`) donc aucune configuration supplémentaire n'est nécessaire côté client.
 
 Réponse de `POST /auth/login` : `{ accessToken, refreshToken, user: { id, email, firstName, lastName, roles } }`. Le token est gardé en mémoire (`src/lib/auth-store.ts`) et injecté en `Authorization: Bearer` sur tous les appels suivants par `src/lib/api.ts`. **Pas encore fait** : stockage sécurisé (`safeStorage` côté process main — actuellement perdu à chaque redémarrage), refresh automatique du token expiré.
+
+**Magasin courant** : pas d'endpoint `/stores` ni de sélecteur multi-magasin côté backend (V1 mono-magasin assumée, voir `docs/ROADMAP.md` du backend). `src/hooks/use-default-store.ts` dérive le `storeId` de la première caisse active (`GET /cash-registers`) — utilisé par Catalogue, Achats, Clients et Rapports. À revoir le jour où le backend expose plusieurs magasins.
 
 ## 5. Gotchas connus (Electron Forge + Vite + Tailwind v4)
 

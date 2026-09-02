@@ -25,11 +25,11 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { tab: "dashboard", icon: LayoutDashboard, label: "Tableau de bord", available: true },
   { tab: "caisse", icon: ShoppingCart, label: "Caisse", available: true },
-  { tab: "catalogue", icon: Boxes, label: "Catalogue & stock", available: false },
-  { tab: "achats", icon: Truck, label: "Achats & livraisons", available: false },
-  { tab: "clients", icon: Users, label: "Clients", available: false },
-  { tab: "rapports", icon: FileBarChart, label: "Rapports", available: false },
-  { tab: "audit", icon: ShieldCheck, label: "Journal d'audit", available: false },
+  { tab: "catalogue", icon: Boxes, label: "Catalogue & stock", available: true },
+  { tab: "achats", icon: Truck, label: "Achats & livraisons", available: true },
+  { tab: "clients", icon: Users, label: "Clients", available: true },
+  { tab: "rapports", icon: FileBarChart, label: "Rapports", available: true },
+  { tab: "audit", icon: ShieldCheck, label: "Journal d'audit", available: true },
 ];
 
 function initials(user: AuthUser) {

@@ -68,6 +68,7 @@ export interface Product {
   id: string;
   sku: string;
   name: string;
+  categoryId: string | null;
   costPrice: string;
   taxRate: string;
   unitType: string;
@@ -128,6 +129,147 @@ export interface Sale {
   totalAmount: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+}
+
+export interface CreateProductInput {
+  sku: string;
+  name: string;
+  slug: string;
+  categoryId?: string;
+  costPrice: number;
+  taxRate: number;
+  reorderLevel: number;
+  minimumStock: number;
+}
+
+export interface Supplier {
+  id: string;
+  code: string;
+  name: string;
+  contactName: string | null;
+  phone: string | null;
+  email: string | null;
+  status: string;
+}
+
+export interface CreateSupplierInput {
+  name: string;
+  code: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface PurchaseOrderItem {
+  productId: string;
+  productName?: string;
+  quantity: string;
+  unitCost: string;
+  taxRate: string;
+  lineTotal: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  storeId: string;
+  supplierId: string;
+  reference: string;
+  status: string;
+  subtotal: string;
+  taxAmount: string;
+  totalAmount: string;
+  createdAt: string;
+  items?: PurchaseOrderItem[];
+}
+
+export interface CreatePurchaseOrderInput {
+  storeId: string;
+  supplierId: string;
+  items: { productId: string; quantity: number; unitCost: number; taxRate?: number }[];
+}
+
+export interface CreateGoodsReceiptInput {
+  storeId: string;
+  purchaseOrderId?: string;
+  items: { productId: string; quantity: number; unitCost: number }[];
+}
+
+export interface Delivery {
+  id: string;
+  orderId: string;
+  storeId: string;
+  status: string;
+  deliveryFee: string;
+  createdAt?: string;
+}
+
+export interface Customer {
+  id: string;
+  customerNo: string;
+  type: string;
+  firstName: string | null;
+  lastName: string | null;
+  companyName: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+export interface CreateCustomerInput {
+  storeId: string;
+  type?: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  userId: string | null;
+  storeId: string | null;
+  action: string;
+  resource: string;
+  resourceId: string | null;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface SalesSummary {
+  salesCount: number;
+  totalRevenue: number;
+  totalTax: number;
+  totalDiscount: number;
+  averageBasket: number;
+}
+
+export interface StockValueItem {
+  productId: string;
+  sku: string | null;
+  name: string | null;
+  quantity: number;
+  costPrice: number;
+  value: number;
+}
+
+export interface StockValueReport {
+  totalValue: number;
+  items: StockValueItem[];
+}
+
+export interface TopProduct {
+  productId: string;
+  name: string;
+  sku: string;
+  quantity: number;
+  revenue: number;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>("/auth/login", {
@@ -138,6 +280,12 @@ export const api = {
   products: {
     search: (query: string) =>
       request<Product[]>(`/products?search=${encodeURIComponent(query)}`),
+    create: (input: CreateProductInput) =>
+      request<Product>("/products", { method: "POST", body: JSON.stringify(input) }),
+  },
+
+  categories: {
+    list: () => request<Category[]>("/categories"),
   },
 
   stock: {
@@ -169,5 +317,61 @@ export const api = {
         method: "POST",
         body: JSON.stringify(input),
       }),
+  },
+
+  suppliers: {
+    list: () => request<Supplier[]>("/suppliers"),
+    create: (input: CreateSupplierInput) =>
+      request<Supplier>("/suppliers", { method: "POST", body: JSON.stringify(input) }),
+  },
+
+  purchaseOrders: {
+    list: (storeId?: string) =>
+      request<PurchaseOrder[]>(`/purchase-orders${storeId ? `?storeId=${storeId}` : ""}`),
+    findOne: (id: string) => request<PurchaseOrder>(`/purchase-orders/${id}`),
+    create: (input: CreatePurchaseOrderInput) =>
+      request<PurchaseOrder>("/purchase-orders", { method: "POST", body: JSON.stringify(input) }),
+    submit: (id: string) => request<PurchaseOrder>(`/purchase-orders/${id}/submit`, { method: "POST" }),
+    approve: (id: string) => request<PurchaseOrder>(`/purchase-orders/${id}/approve`, { method: "POST" }),
+    cancel: (id: string) => request<PurchaseOrder>(`/purchase-orders/${id}/cancel`, { method: "POST" }),
+  },
+
+  goodsReceipts: {
+    create: (input: CreateGoodsReceiptInput) =>
+      request("/goods-receipts", { method: "POST", body: JSON.stringify(input) }),
+  },
+
+  deliveries: {
+    list: (storeId?: string) => request<Delivery[]>(`/deliveries${storeId ? `?storeId=${storeId}` : ""}`),
+    updateStatus: (id: string, status: string, failureReason?: string) =>
+      request<Delivery>(`/deliveries/${id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status, failureReason }),
+      }),
+  },
+
+  customers: {
+    list: (storeId: string) => request<Customer[]>(`/customers?storeId=${storeId}`),
+    create: (input: CreateCustomerInput) =>
+      request<Customer>("/customers", { method: "POST", body: JSON.stringify(input) }),
+  },
+
+  auditLogs: {
+    list: (filters?: { action?: string; resource?: string; limit?: number }) => {
+      const params = new URLSearchParams();
+      if (filters?.action) params.set("action", filters.action);
+      if (filters?.resource) params.set("resource", filters.resource);
+      params.set("limit", String(filters?.limit ?? 100));
+      return request<AuditLog[]>(`/audit-logs?${params.toString()}`);
+    },
+  },
+
+  reports: {
+    salesSummary: (storeId?: string) =>
+      request<SalesSummary>(`/reports/sales-summary${storeId ? `?storeId=${storeId}` : ""}`),
+    stockValue: (storeId?: string) =>
+      request<StockValueReport>(`/reports/stock-value${storeId ? `?storeId=${storeId}` : ""}`),
+    topProducts: (storeId?: string) =>
+      request<TopProduct[]>(`/reports/top-products${storeId ? `?storeId=${storeId}` : ""}`),
   },
 };

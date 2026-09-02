@@ -3,12 +3,26 @@ import { useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { TitleBar } from "@/components/TitleBar";
-import { setAccessToken } from "@/lib/auth-store";
 import type { AuthUser } from "@/lib/api";
+import { setAccessToken } from "@/lib/auth-store";
+import { AuditPage } from "@/pages/AuditPage";
 import { CashierPage } from "@/pages/CashierPage";
+import { CataloguePage } from "@/pages/CataloguePage";
+import { ClientsPage } from "@/pages/ClientsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { PurchasingPage } from "@/pages/PurchasingPage";
+import { ReportsPage } from "@/pages/ReportsPage";
 import type { NavTab } from "@/types/nav";
+
+const TAB_PAGES: Record<Exclude<NavTab, "dashboard">, React.ComponentType> = {
+  caisse: CashierPage,
+  catalogue: CataloguePage,
+  achats: PurchasingPage,
+  clients: ClientsPage,
+  rapports: ReportsPage,
+  audit: AuditPage,
+};
 
 export function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -24,6 +38,8 @@ export function App() {
     setUser(null);
     setActiveTab("dashboard");
   }
+
+  const TabPage = activeTab === "dashboard" ? null : TAB_PAGES[activeTab];
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -50,7 +66,7 @@ export function App() {
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <AppShell user={user} activeTab={activeTab} onNavigate={setActiveTab} onLogout={handleLogout}>
-                {activeTab === "caisse" ? <CashierPage /> : <DashboardPage user={user} />}
+                {TabPage ? <TabPage /> : <DashboardPage user={user} onNavigate={setActiveTab} />}
               </AppShell>
             </motion.div>
           )}
