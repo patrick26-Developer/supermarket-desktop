@@ -2,6 +2,32 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-03 — CRUD réellement complet (détails/suppression/modification partout), images produits, gestion des rôles
+
+Retour utilisateur après la session précédente : le CRUD annoncé "complet" ne l'était pas — pas d'action détails/modifier/supprimer visible sur la plupart des pages, pas d'images produits. Corrigé écran par écran.
+
+**`src/lib/api.ts` complété** — champs manquants ajoutés aux types existants plutôt que redécouverts au fil de l'eau : `Product.slug/description/reorderLevel/minimumStock/imageUrl`, `Supplier.address/city/taxNumber`, `Delivery.failureReason/notes/scheduledAt/deliveredAt/statusHistory`, `Customer.status`. Nouveau `CustomerDetail` (avec `addresses[]`) et `CustomerAddress`. Nouvelles méthodes : `customers.findOne/addAddress/removeAddress`, `deliveries.findOne`, `categories.update/remove`. `PurchaseOrderItem` corrigé sur le vrai contrat Prisma (`subtotal`, pas de `productName` dénormalisé — le nom produit est reconstitué côté client via une map `productId → nom`).
+
+**Images produits** (`src/components/catalogue/ProductAvatar.tsx`, nouveau) — pas d'upload de fichier côté backend (`Product.imageUrl` est une simple URL validée `@IsUrl`), donc champ URL à coller dans le formulaire, aperçu en direct. Repli sur une icône `Package` (lucide) dans une tuile neutre quand `imageUrl` est absente ou casse au chargement (`onError`) — exactement la demande de l'utilisateur ("si il n'y a pas d'image mets temporairement les icônes"). Colonne avatar ajoutée à la liste du Catalogue.
+
+**Catégories** (`src/components/catalogue/CategoriesSection.tsx`, nouveau) — gestion CRUD complète alors qu'il n'existait aucune UI malgré un backend qui la supportait déjà entièrement : liste en pastilles, création, édition/suppression inline avec confirmation.
+
+**Détails cliquables partout** — chaque ligne de tableau/carte ouvre désormais un dialogue au clic (au lieu de nécessiter une icône crayon dédiée) :
+- **Produits** — dialogue étendu (description, image, seuils de réapprovisionnement, statut ACTIVE/INACTIVE/DISCONTINUED/ARCHIVED en édition).
+- **Fournisseurs** — carte cliquable, formulaire étendu (contact, adresse, ville, n° fiscal, statut ACTIVE/INACTIVE/BLOCKED/ARCHIVED).
+- **Commandes fournisseurs** — dialogue détails **lecture seule** (lignes d'articles avec nom/quantité/coût/sous-total, totaux) : conforme au backend, qui n'expose que des transitions de statut après création, pas d'édition/suppression.
+- **Livraisons** — dialogue détails avec historique de statut horodaté (`statusHistory`), motif d'échec et notes si présents.
+- **Clients** — dialogue combinant édition du client (email + statut ajoutés) et gestion des **adresses** (ajout/suppression, étoile sur l'adresse par défaut) — fonctionnalité backend déjà prête (`CustomerAddress`), jamais branchée jusqu'ici.
+- **Utilisateurs** — nouveau bouton "Détails" à côté de la réinitialisation de mot de passe : édition des informations (prénom/nom/téléphone/statut) **et gestion des rôles** (pastilles à bascule, `assignRole`/`revokeRole`) — répond directement à la demande "le SUPER_ADMIN peut aussi créer des utilisateurs, voir tous les utilisateurs" (la création existait déjà depuis la session précédente ; ce qui manquait était la vue/modification d'un utilisateur existant et la gestion de ses rôles).
+
+**Pas d'action ajoutée là où le backend ne le permet pas** — aucune suppression pour Clients (pas de `DELETE /customers/:id` exposé) ni pour les Commandes fournisseurs (annulation seulement, déjà présente). Évite une UI qui mentirait sur ce que fait réellement le backend.
+
+**Nouveau composant** `src/components/ui/dialog.tsx` déjà existant réutilisé partout ci-dessus (pas de nouvelle primitive UI nécessaire, seulement de nouvelles compositions).
+
+**Vérifié de bout en bout, build packagé, piloté par Playwright, en plusieurs passes** — confirmé avec de vraies interactions (pas juste un rendu statique) : image produit collée et enregistrée (persistée après rechargement de la liste), catégorie créée, dialogue fournisseur ouvert, dialogue commande fournisseur ouvert (articles, sous-total/TVA/total corrects sur une commande réelle REÇU à 160 000 FCFA), dialogue livraison ouvert, adresse client ajoutée et visible immédiatement dans la liste (avec étoile par défaut sur l'ancienne adresse), dialogue utilisateur ouvert avec les 11 rôles affichés et le rôle actif ("Super administrateur") correctement surligné. **Zéro erreur** (page, requête réseau, console) sur l'ensemble des parcours testés.
+
+**Piège rencontré dans le script de test, pas dans l'app** — deux faux échecs de vérification à la suite, tous deux dans le harnais Playwright, pas dans le code produit : (1) une recherche de texte insensible à la casse manquante a fait échouer un `waitForText("Articles")` alors que le libellé s'affichait bien, simplement transformé en majuscules par le CSS (`innerText` reflète le rendu, pas le HTML source) ; (2) un sélecteur de ligne trop large (`"FCFA"`) matchait à la fois la ligne "commande" et la ligne "livraison" (toutes deux affichent un montant en FCFA), rouvrant systématiquement le mauvais dialogue. Corrigés dans le script de test ; aucune modification de l'application n'a été nécessaire pour ces deux points — retenu ici pour la prochaine session car le diagnostic a pris du temps.
+
 ## 2026-09-02 — Graphiques, CRUD complet, thème clair/sombre, i18n FR/EN, gestion des utilisateurs
 
 Demande groupée en une session : graphiques data-viz, tri/filtres/recherche partout, thème clair/sombre, langues FR/EN, gestion des utilisateurs par le SUPER_ADMIN, et un catalogue plus fourni pour donner de la matière à tout le reste.

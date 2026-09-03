@@ -1,6 +1,6 @@
 # Architecture — Supermarket Desktop (Superette)
 
-> Dernière mise à jour : 2026-09-02
+> Dernière mise à jour : 2026-09-03
 
 ## 1. Vue d'ensemble
 
@@ -58,7 +58,8 @@ supermarket-desktop/
 │   ├── components/
 │   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge, Dialog…)
 │   │   ├── pos/                # ProductSearch, CartPanel — écran Caisse
-│   │   ├── purchasing/         # SuppliersSection, PurchaseOrdersSection, DeliveriesSection
+│   │   ├── catalogue/          # ProductAvatar (image ou icône de repli), CategoriesSection (CRUD)
+│   │   ├── purchasing/         # SuppliersSection, PurchaseOrdersSection (+ détails lecture seule), DeliveriesSection (+ détails/historique statut)
 │   │   ├── reports/            # Charts.tsx — graphiques recharts
 │   │   ├── TitleBar.tsx        # barre de titre custom (boutons système + thème + langue)
 │   │   └── AppShell.tsx        # sidebar + navigation + bloc utilisateur
@@ -66,12 +67,12 @@ supermarket-desktop/
 │       ├── LoginPage.tsx      # écran de connexion plein écran (2 panneaux), câblé sur l'API
 │       ├── DashboardPage.tsx  # accueil post-connexion — résumé de ventes réel + cartes de nav
 │       ├── CashierPage.tsx    # Caisse — session, recherche produit, panier, encaissement
-│       ├── CataloguePage.tsx  # Catalogue & stock — produits (CRUD complet), tri/filtre/recherche
-│       ├── PurchasingPage.tsx # Achats & livraisons — fournisseurs (CRUD), commandes, livraisons
-│       ├── ClientsPage.tsx    # Clients — liste + création/édition, recherche
+│       ├── CataloguePage.tsx  # Catalogue & stock — produits (CRUD complet + détails + image), catégories, tri/filtre/recherche
+│       ├── PurchasingPage.tsx # Achats & livraisons — fournisseurs (CRUD + détails), commandes (détails lecture seule), livraisons (détails)
+│       ├── ClientsPage.tsx    # Clients — liste + création/édition + détails + gestion des adresses, recherche
 │       ├── ReportsPage.tsx    # Rapports — KPI, 3 graphiques, tableaux triables
 │       ├── AuditPage.tsx      # Journal d'audit — filtrable (action, ressource, recherche)
-│       └── UsersPage.tsx      # Utilisateurs (SUPER_ADMIN/ADMIN) — comptes, rôles, reset mot de passe
+│       └── UsersPage.tsx      # Utilisateurs (SUPER_ADMIN/ADMIN) — comptes, détails + gestion des rôles, reset mot de passe
 ├── forge.config.ts          # config Electron Forge (makers, fuses, plugin Vite)
 ├── forge.env.d.ts           # déclare les globales injectées par le plugin Vite
 ├── components.json          # config shadcn/ui (alias, style, base color)

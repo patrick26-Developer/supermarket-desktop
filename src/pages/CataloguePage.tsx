@@ -1,6 +1,8 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, LoaderCircle, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { CategoriesSection } from "@/components/catalogue/CategoriesSection";
+import { ProductAvatar } from "@/components/catalogue/ProductAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +137,9 @@ export function CataloguePage() {
         />
       )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <CategoriesSection categories={categories} onChanged={load} />
+
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -175,6 +179,7 @@ export function CataloguePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
+                <th className="px-4 py-3 font-medium"></th>
                 <SortTh label={t("catalogue.colProduct")} sortKeyName="name" />
                 <th className="px-4 py-3 font-medium">{t("catalogue.colCategory")}</th>
                 <SortTh label={t("catalogue.colCost")} sortKeyName="costPrice" />
@@ -188,7 +193,14 @@ export function CataloguePage() {
               {filtered.map((p) => {
                 const stock = stockByProduct.get(p.id);
                 return (
-                  <tr key={p.id} className="border-b border-border last:border-0">
+                  <tr
+                    key={p.id}
+                    onClick={() => setEditing(p)}
+                    className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                  >
+                    <td className="px-4 py-3">
+                      <ProductAvatar imageUrl={p.imageUrl} name={p.name} />
+                    </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-foreground">{p.name}</p>
                       <p className="text-xs text-muted-foreground">{p.sku}</p>
@@ -208,9 +220,9 @@ export function CataloguePage() {
                     <td className="px-4 py-3">
                       <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status}</Badge>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1">
-                        <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.edit")}>
+                        <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
                           <Pencil className="size-3.5" />
                         </button>
                         <button type="button" onClick={() => setDeleting(p)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
@@ -276,9 +288,14 @@ function ProductForm({
   const isEdit = !!product;
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
+  const [description, setDescription] = useState(product?.description ?? "");
   const [categoryId, setCategoryId] = useState(product?.categoryId ?? "");
   const [costPrice, setCostPrice] = useState(String(product?.costPrice ?? "0"));
   const [taxRate, setTaxRate] = useState(String(product?.taxRate ?? "0"));
+  const [reorderLevel, setReorderLevel] = useState(String(product?.reorderLevel ?? "0"));
+  const [minimumStock, setMinimumStock] = useState(String(product?.minimumStock ?? "0"));
+  const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? "");
+  const [status, setStatus] = useState(product?.status ?? "ACTIVE");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -290,9 +307,14 @@ function ProductForm({
       if (isEdit && product) {
         const patch: Partial<CreateProductInput> = {
           name,
+          description: description || undefined,
           categoryId: categoryId || undefined,
           costPrice: Number(costPrice),
           taxRate: Number(taxRate),
+          reorderLevel: Number(reorderLevel),
+          minimumStock: Number(minimumStock),
+          imageUrl: imageUrl || undefined,
+          status,
         };
         await api.products.update(product.id, patch);
       } else {
@@ -300,11 +322,13 @@ function ProductForm({
           sku,
           name,
           slug: slugify(name),
+          description: description || undefined,
           categoryId: categoryId || undefined,
           costPrice: Number(costPrice),
           taxRate: Number(taxRate),
-          reorderLevel: 0,
-          minimumStock: 0,
+          reorderLevel: Number(reorderLevel),
+          minimumStock: Number(minimumStock),
+          imageUrl: imageUrl || undefined,
         });
       }
       onDone();
@@ -316,19 +340,24 @@ function ProductForm({
   }
 
   const formBody = (
-    <form onSubmit={handleSubmit} className={isEdit ? "" : "mt-4 grid grid-cols-2 gap-4 rounded-lg border border-border bg-card p-5 sm:grid-cols-4"}>
-      <div className={isEdit ? "grid grid-cols-2 gap-4" : "col-span-2"}>
-        <div className={isEdit ? "col-span-2 space-y-1.5" : "space-y-1.5"}>
+    <form onSubmit={handleSubmit} className={isEdit ? "" : "mt-4 rounded-lg border border-border bg-card p-5"}>
+      {isEdit && (
+        <div className="mb-4 flex justify-center">
+          <ProductAvatar imageUrl={imageUrl || null} name={name} size="lg" />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="col-span-2 space-y-1.5">
           <Label>{t("common.name")}</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
         {!isEdit && (
-          <div className="mt-4 space-y-1.5">
+          <div className="space-y-1.5">
             <Label>{t("catalogue.sku")}</Label>
             <Input value={sku} onChange={(e) => setSku(e.target.value)} required />
           </div>
         )}
-        <div className="mt-4 space-y-1.5">
+        <div className="space-y-1.5">
           <Label>{t("catalogue.category")}</Label>
           <select
             value={categoryId}
@@ -343,16 +372,51 @@ function ProductForm({
             ))}
           </select>
         </div>
-        <div className="mt-4 space-y-1.5">
+        <div className="col-span-2 space-y-1.5 sm:col-span-4">
+          <Label>{t("catalogue.description")}</Label>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div className="col-span-2 space-y-1.5 sm:col-span-4">
+          <Label>{t("catalogue.image")}</Label>
+          <Input
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://…"
+          />
+        </div>
+        <div className="space-y-1.5">
           <Label>{t("catalogue.costPrice")}</Label>
           <Input type="number" min="0" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} />
         </div>
-        <div className="mt-4 space-y-1.5">
+        <div className="space-y-1.5">
           <Label>{t("catalogue.taxRate")}</Label>
           <Input type="number" min="0" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
         </div>
+        <div className="space-y-1.5">
+          <Label>{t("catalogue.reorderLevel")}</Label>
+          <Input type="number" min="0" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("catalogue.minimumStock")}</Label>
+          <Input type="number" min="0" value={minimumStock} onChange={(e) => setMinimumStock(e.target.value)} />
+        </div>
+        {isEdit && (
+          <div className="space-y-1.5">
+            <Label>{t("common.status")}</Label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="DISCONTINUED">DISCONTINUED</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+          </div>
+        )}
       </div>
-      <div className={isEdit ? "mt-4 flex items-center gap-2" : "col-span-2 flex items-end gap-2 sm:col-span-4"}>
+      <div className="mt-4 flex items-center gap-2">
         {error && <p className="mr-auto self-center text-sm text-destructive">{error}</p>}
         <Button type="submit" disabled={submitting || !storeId}>
           {submitting && <LoaderCircle className="animate-spin" />}
@@ -366,7 +430,7 @@ function ProductForm({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel?.()}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{product?.name}</DialogTitle>
         </DialogHeader>

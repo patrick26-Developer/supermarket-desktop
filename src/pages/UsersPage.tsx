@@ -1,4 +1,4 @@
-import { CheckCircle2, Copy, KeyRound, LoaderCircle, Plus, UserCog, X } from "lucide-react";
+import { CheckCircle2, Copy, KeyRound, LoaderCircle, Pencil, Plus, UserCog, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, ApiError, type AppUser, type Role } from "@/lib/api";
+import { api, ApiError, type AppUser, type AppUserDetail, type Role } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 function generatePassword() {
@@ -32,6 +32,7 @@ export function UsersPage() {
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [resetTarget, setResetTarget] = useState<AppUser | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null);
 
   async function load() {
@@ -136,7 +137,11 @@ export function UsersPage() {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <tr key={u.id} className="border-b border-border last:border-0">
+                <tr
+                  key={u.id}
+                  onClick={() => setEditingId(u.id)}
+                  className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                >
                   <td className="px-4 py-3 font-medium text-foreground">
                     {u.firstName} {u.lastName}
                   </td>
@@ -144,11 +149,17 @@ export function UsersPage() {
                   <td className="px-4 py-3">
                     <Badge tone={u.status === "ACTIVE" ? "success" : "neutral"}>{u.status}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
-                      <KeyRound className="size-3.5" />
-                      {t("users.resetPassword")}
-                    </Button>
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => setEditingId(u.id)}>
+                        <Pencil className="size-3.5" />
+                        {t("common.details")}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
+                        <KeyRound className="size-3.5" />
+                        {t("users.resetPassword")}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -158,7 +169,167 @@ export function UsersPage() {
       </div>
 
       {resetTarget && <ResetPasswordDialog user={resetTarget} onClose={() => setResetTarget(null)} />}
+      {editingId && (
+        <UserDetailsDialog
+          id={editingId}
+          roles={roles}
+          onClose={() => setEditingId(null)}
+          onChanged={load}
+        />
+      )}
     </div>
+  );
+}
+
+function UserDetailsDialog({
+  id,
+  roles,
+  onClose,
+  onChanged,
+}: {
+  id: string;
+  roles: Role[];
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const { t } = useI18n();
+  const [user, setUser] = useState<AppUserDetail | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [status, setStatus] = useState("ACTIVE");
+  const [submitting, setSubmitting] = useState(false);
+  const [busyRole, setBusyRole] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      const u = await api.users.findOne(id);
+      setUser(u);
+      setFirstName(u.firstName);
+      setLastName(u.lastName);
+      setPhone(u.phone ?? "");
+      setStatus(u.status);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Impossible de charger l'utilisateur");
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.users.update(id, { firstName, lastName, phone: phone || undefined, status });
+      onChanged();
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Action impossible");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const activeRoles = new Set((user?.roles ?? []).map((r) => r.role.code));
+
+  async function toggleRole(code: string) {
+    setBusyRole(code);
+    setError(null);
+    try {
+      if (activeRoles.has(code)) await api.users.revokeRole(id, code);
+      else await api.users.assignRole(id, code);
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Action impossible");
+    } finally {
+      setBusyRole(null);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{user ? `${user.firstName} ${user.lastName}` : "…"}</DialogTitle>
+          {user && <DialogDescription>{user.email}</DialogDescription>}
+        </DialogHeader>
+
+        {!user ? (
+          <div className="flex justify-center py-8">
+            <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} className="mt-3 grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("users.firstName")}</Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("users.lastName")}</Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("purchasing.phone")}</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("common.status")}</Label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INVITED">INVITED</option>
+                  <option value="SUSPENDED">SUSPENDED</option>
+                  <option value="BLOCKED">BLOCKED</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                  <option value="ARCHIVED">ARCHIVED</option>
+                </select>
+              </div>
+              <div className="col-span-2 flex items-center gap-2">
+                {error && <p className="mr-auto text-sm text-destructive">{error}</p>}
+                <Button type="submit" size="sm" disabled={submitting}>
+                  {submitting && <LoaderCircle className="animate-spin" />}
+                  {t("common.save")}
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-4 border-t border-border pt-4">
+              <Label>{t("users.manageRoles")}</Label>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {roles.map((r) => {
+                  const active = activeRoles.has(r.code);
+                  return (
+                    <button
+                      key={r.code}
+                      type="button"
+                      disabled={busyRole === r.code}
+                      onClick={() => toggleRole(r.code)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/70"
+                      }`}
+                    >
+                      {r.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

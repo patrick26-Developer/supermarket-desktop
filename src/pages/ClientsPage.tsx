@@ -1,4 +1,4 @@
-import { LoaderCircle, Pencil, Plus, Search, Users, X } from "lucide-react";
+import { LoaderCircle, MapPin, Pencil, Plus, Search, Star, Trash2, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDefaultStore } from "@/hooks/use-default-store";
-import { api, ApiError, type Customer } from "@/lib/api";
+import { api, ApiError, type Customer, type CustomerDetail } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 export function ClientsPage() {
@@ -111,7 +111,11 @@ export function ClientsPage() {
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.id} className="border-b border-border last:border-0">
+                <tr
+                  key={c.id}
+                  onClick={() => setEditing(c)}
+                  className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                >
                   <td className="px-4 py-3 font-medium text-foreground">
                     {c.companyName || `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "—"}
                   </td>
@@ -123,8 +127,8 @@ export function ClientsPage() {
                       {c.type === "BUSINESS" ? t("clients.business") : t("clients.individual")}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.edit")}>
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
                       <Pencil className="size-3.5" />
                     </button>
                   </td>
@@ -137,7 +141,7 @@ export function ClientsPage() {
 
       {editing && storeId && (
         <Dialog open onOpenChange={(open) => !open && setEditing(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editing.companyName || `${editing.firstName ?? ""} ${editing.lastName ?? ""}`}</DialogTitle>
             </DialogHeader>
@@ -149,6 +153,9 @@ export function ClientsPage() {
                 load();
               }}
             />
+            <div className="mt-5 border-t border-border pt-4">
+              <AddressesSection customerId={editing.id} />
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -172,6 +179,8 @@ function CustomerForm({
   const [lastName, setLastName] = useState(customer?.lastName ?? "");
   const [companyName, setCompanyName] = useState(customer?.companyName ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
+  const [email, setEmail] = useState(customer?.email ?? "");
+  const [status, setStatus] = useState(customer?.status ?? "ACTIVE");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -186,8 +195,9 @@ function CustomerForm({
         lastName: type === "INDIVIDUAL" ? lastName : undefined,
         companyName: type === "BUSINESS" ? companyName : undefined,
         phone: phone || undefined,
+        email: email || undefined,
       };
-      if (isEdit && customer) await api.customers.update(customer.id, payload);
+      if (isEdit && customer) await api.customers.update(customer.id, { ...payload, status });
       else await api.customers.create({ storeId, ...payload });
       onDone();
     } catch (err) {
@@ -238,6 +248,25 @@ function CustomerForm({
           <Label>{t("purchasing.phone")}</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
+        <div className="space-y-1.5">
+          <Label>{t("purchasing.email")}</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        {isEdit && (
+          <div className="space-y-1.5">
+            <Label>{t("common.status")}</Label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="BLOCKED">BLOCKED</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="mt-4 flex items-center gap-2">
@@ -245,6 +274,146 @@ function CustomerForm({
         <Button type="submit" size="sm" disabled={submitting}>
           {submitting && <LoaderCircle className="animate-spin" />}
           {isEdit ? t("common.save") : t("common.create")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function AddressesSection({ customerId }: { customerId: string }) {
+  const { t } = useI18n();
+  const [detail, setDetail] = useState<CustomerDetail | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      setDetail(await api.customers.findOne(customerId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Impossible de charger les adresses");
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  async function removeAddress(addressId: string) {
+    try {
+      await api.customers.removeAddress(customerId, addressId);
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Suppression impossible");
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">{t("clients.addresses")}</p>
+        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
+          {showForm ? t("common.cancel") : t("clients.addAddress")}
+        </Button>
+      </div>
+
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+
+      {showForm && (
+        <AddressForm
+          customerId={customerId}
+          onDone={() => {
+            setShowForm(false);
+            load();
+          }}
+        />
+      )}
+
+      <div className="mt-3 space-y-2">
+        {!detail ? (
+          <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+        ) : detail.addresses.length === 0 ? (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="size-4" /> {t("clients.noAddresses")}
+          </p>
+        ) : (
+          detail.addresses.map((a) => (
+            <div key={a.id} className="flex items-start justify-between rounded-md border border-border p-2.5 text-sm">
+              <div>
+                <p className="flex items-center gap-1.5 font-medium text-foreground">
+                  {a.recipient}
+                  {a.isDefault && <Star className="size-3 fill-accent text-accent" />}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {a.address}, {a.city}
+                  {a.phone ? ` · ${a.phone}` : ""}
+                </p>
+              </div>
+              <button type="button" onClick={() => removeAddress(a.id)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddressForm({ customerId, onDone }: { customerId: string; onDone: () => void }) {
+  const { t } = useI18n();
+  const [recipient, setRecipient] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.customers.addAddress(customerId, { recipient, phone: phone || undefined, address, city, isDefault });
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Action impossible");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-2 rounded-md border border-border bg-secondary/40 p-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs">{t("clients.recipient")}</Label>
+          <Input value={recipient} onChange={(e) => setRecipient(e.target.value)} required className="h-8 text-sm" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">{t("purchasing.phone")}</Label>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="h-8 text-sm" />
+        </div>
+        <div className="col-span-2 space-y-1">
+          <Label className="text-xs">{t("clients.address")}</Label>
+          <Input value={address} onChange={(e) => setAddress(e.target.value)} required className="h-8 text-sm" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">{t("clients.city")}</Label>
+          <Input value={city} onChange={(e) => setCity(e.target.value)} required className="h-8 text-sm" />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="size-3.5 accent-primary" />
+        {t("clients.isDefault")}
+      </label>
+      <div className="flex items-center gap-2">
+        {error && <p className="mr-auto text-xs text-destructive">{error}</p>}
+        <Button type="submit" size="sm" disabled={submitting}>
+          {submitting && <LoaderCircle className="animate-spin" />}
+          {t("common.create")}
         </Button>
       </div>
     </form>

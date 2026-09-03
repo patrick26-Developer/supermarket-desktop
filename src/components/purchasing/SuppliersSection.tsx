@@ -78,16 +78,20 @@ export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps
           </p>
         )}
         {filtered.map((s) => (
-          <div key={s.id} className="flex items-start justify-between rounded-lg border border-border bg-card p-3">
-            <div>
+          <div
+            key={s.id}
+            onClick={() => setEditing(s)}
+            className="flex cursor-pointer items-start justify-between rounded-lg border border-border bg-card p-3 hover:border-primary/40"
+          >
+            <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">{s.name}</p>
               <p className="text-xs text-muted-foreground">
                 {s.code}
                 {s.phone ? ` · ${s.phone}` : ""}
               </p>
             </div>
-            <div className="flex shrink-0 gap-1">
-              <button type="button" onClick={() => setEditing(s)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.edit")}>
+            <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
+              <button type="button" onClick={() => setEditing(s)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
                 <Pencil className="size-3.5" />
               </button>
               <button type="button" onClick={() => setDeleting(s)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
@@ -100,7 +104,7 @@ export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps
 
       {editing && (
         <Dialog open onOpenChange={(open) => !open && setEditing(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editing.name}</DialogTitle>
             </DialogHeader>
@@ -141,6 +145,12 @@ function SupplierForm({ supplier, onDone }: { supplier?: Supplier; onDone: () =>
   const [name, setName] = useState(supplier?.name ?? "");
   const [code, setCode] = useState(supplier?.code ?? "");
   const [phone, setPhone] = useState(supplier?.phone ?? "");
+  const [email, setEmail] = useState(supplier?.email ?? "");
+  const [contactName, setContactName] = useState(supplier?.contactName ?? "");
+  const [address, setAddress] = useState(supplier?.address ?? "");
+  const [city, setCity] = useState(supplier?.city ?? "");
+  const [taxNumber, setTaxNumber] = useState(supplier?.taxNumber ?? "");
+  const [status, setStatus] = useState(supplier?.status ?? "ACTIVE");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,8 +159,17 @@ function SupplierForm({ supplier, onDone }: { supplier?: Supplier; onDone: () =>
     setSubmitting(true);
     setError(null);
     try {
-      if (isEdit && supplier) await api.suppliers.update(supplier.id, { name, phone: phone || undefined });
-      else await api.suppliers.create({ name, code, phone: phone || undefined });
+      const payload = {
+        name,
+        phone: phone || undefined,
+        email: email || undefined,
+        contactName: contactName || undefined,
+        address: address || undefined,
+        city: city || undefined,
+        taxNumber: taxNumber || undefined,
+      };
+      if (isEdit && supplier) await api.suppliers.update(supplier.id, { ...payload, status });
+      else await api.suppliers.create({ ...payload, code });
       onDone();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Action impossible");
@@ -160,8 +179,8 @@ function SupplierForm({ supplier, onDone }: { supplier?: Supplier; onDone: () =>
   }
 
   return (
-    <form onSubmit={handleSubmit} className={isEdit ? "mt-2" : "mt-3 grid grid-cols-3 gap-3 rounded-lg border border-border bg-card p-4"}>
-      <div className={isEdit ? "grid grid-cols-2 gap-3" : "contents"}>
+    <form onSubmit={handleSubmit} className={isEdit ? "mt-2" : "mt-3 rounded-lg border border-border bg-card p-4"}>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label>{t("common.name")}</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -173,11 +192,46 @@ function SupplierForm({ supplier, onDone }: { supplier?: Supplier; onDone: () =>
           </div>
         )}
         <div className="space-y-1.5">
+          <Label>{t("purchasing.contactName")}</Label>
+          <Input value={contactName} onChange={(e) => setContactName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
           <Label>{t("purchasing.phone")}</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
+        <div className="space-y-1.5">
+          <Label>{t("purchasing.email")}</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("purchasing.taxNumber")}</Label>
+          <Input value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("purchasing.city")}</Label>
+          <Input value={city} onChange={(e) => setCity(e.target.value)} />
+        </div>
+        <div className="col-span-2 space-y-1.5">
+          <Label>{t("purchasing.address")}</Label>
+          <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+        {isEdit && (
+          <div className="space-y-1.5">
+            <Label>{t("common.status")}</Label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="BLOCKED">BLOCKED</option>
+              <option value="ARCHIVED">ARCHIVED</option>
+            </select>
+          </div>
+        )}
       </div>
-      <div className={isEdit ? "mt-3 flex items-center gap-2" : "col-span-3 flex items-center gap-2"}>
+      <div className="mt-3 flex items-center gap-2">
         {error && <p className="mr-auto text-sm text-destructive">{error}</p>}
         <Button type="submit" size="sm" disabled={submitting}>
           {submitting && <LoaderCircle className="animate-spin" />}

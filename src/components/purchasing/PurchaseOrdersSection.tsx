@@ -3,6 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError, type Product, type PurchaseOrder, type Supplier } from "@/lib/api";
@@ -49,6 +55,7 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const supplierById = new Map(suppliers.map((s) => [s.id, s.name]));
 
   const filteredOrders = useMemo(
@@ -141,7 +148,11 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
             </thead>
             <tbody>
               {filteredOrders.map((o) => (
-                <tr key={o.id} className="border-b border-border last:border-0">
+                <tr
+                  key={o.id}
+                  onClick={() => setViewingId(o.id)}
+                  className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                >
                   <td className="px-4 py-3 font-medium text-foreground">{o.reference}</td>
                   <td className="px-4 py-3 text-muted-foreground">{supplierById.get(o.supplierId) ?? "—"}</td>
                   <td className="px-4 py-3">
@@ -151,7 +162,7 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
                   </td>
                   <td className="px-4 py-3">{formatCurrency(Number(o.totalAmount))}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(o.createdAt)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <PurchaseOrderActions status={o.status} busy={busyId === o.id} onAction={(a) => runAction(o.id, a)} />
                   </td>
                 </tr>
@@ -160,7 +171,110 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
           </table>
         )}
       </div>
+
+      {viewingId && (
+        <PurchaseOrderDetailsDialog
+          id={viewingId}
+          supplierName={
+            supplierById.get(orders.find((o) => o.id === viewingId)?.supplierId ?? "") ?? "—"
+          }
+          onClose={() => setViewingId(null)}
+        />
+      )}
     </section>
+  );
+}
+
+function PurchaseOrderDetailsDialog({
+  id,
+  supplierName,
+  onClose,
+}: {
+  id: string;
+  supplierName: string;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const [order, setOrder] = useState<PurchaseOrder | null>(null);
+  const [productNames, setProductNames] = useState<Map<string, string>>(new Map());
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([api.purchaseOrders.findOne(id), api.products.search("")])
+      .then(([o, products]) => {
+        setOrder(o);
+        setProductNames(new Map(products.map((p) => [p.id, p.name])));
+      })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Impossible de charger la commande"));
+  }, [id]);
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{order?.reference ?? "…"}</DialogTitle>
+        </DialogHeader>
+        {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+        {!order && !error && (
+          <div className="flex justify-center py-8">
+            <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {order && (
+          <div className="mt-3 space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+              <p>
+                {t("purchasing.colSupplier")}: <span className="text-foreground">{supplierName}</span>
+              </p>
+              <p>
+                {t("purchasing.colCreated")}: <span className="text-foreground">{formatDate(order.createdAt)}</span>
+              </p>
+              <p>
+                {t("common.status")}:{" "}
+                <Badge tone={STATUS_TONE[order.status] ?? "neutral"}>{STATUS_LABEL[order.status] ?? order.status}</Badge>
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground uppercase">{t("purchasing.lineItems")}</p>
+              <div className="overflow-hidden rounded-md border border-border">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {(order.items ?? []).map((item, i) => (
+                      <tr key={i} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2">{productNames.get(item.productId) ?? item.productId}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{item.quantity}</td>
+                        <td className="px-3 py-2 text-right text-muted-foreground">
+                          {formatCurrency(Number(item.unitCost))}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium text-foreground">
+                          {formatCurrency(Number(item.subtotal))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="space-y-1 border-t border-border pt-3">
+              <div className="flex justify-between text-muted-foreground">
+                <span>{t("caisse.subtotal")}</span>
+                <span>{formatCurrency(Number(order.subtotal))}</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <span>{t("caisse.tax")}</span>
+                <span>{formatCurrency(Number(order.taxAmount))}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-foreground">
+                <span>{t("purchasing.total")}</span>
+                <span>{formatCurrency(Number(order.totalAmount))}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 

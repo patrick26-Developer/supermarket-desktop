@@ -68,11 +68,16 @@ export interface Product {
   id: string;
   sku: string;
   name: string;
+  slug: string;
+  description: string | null;
   categoryId: string | null;
   costPrice: string;
   taxRate: string;
   unitType: string;
   status: string;
+  reorderLevel: string;
+  minimumStock: string;
+  imageUrl: string | null;
 }
 
 export interface StockLevel {
@@ -141,11 +146,14 @@ export interface CreateProductInput {
   sku: string;
   name: string;
   slug: string;
+  description?: string;
   categoryId?: string;
   costPrice: number;
   taxRate: number;
   reorderLevel: number;
   minimumStock: number;
+  status?: string;
+  imageUrl?: string;
 }
 
 export interface Supplier {
@@ -155,6 +163,9 @@ export interface Supplier {
   contactName: string | null;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  city: string | null;
+  taxNumber: string | null;
   status: string;
 }
 
@@ -164,15 +175,17 @@ export interface CreateSupplierInput {
   contactName?: string;
   phone?: string;
   email?: string;
+  address?: string;
+  city?: string;
+  taxNumber?: string;
 }
 
 export interface PurchaseOrderItem {
   productId: string;
-  productName?: string;
   quantity: string;
   unitCost: string;
   taxRate: string;
-  lineTotal: string;
+  subtotal: string;
 }
 
 export interface PurchaseOrder {
@@ -205,8 +218,13 @@ export interface Delivery {
   orderId: string;
   storeId: string;
   status: string;
+  failureReason: string | null;
   deliveryFee: string;
+  notes: string | null;
+  scheduledAt: string | null;
+  deliveredAt: string | null;
   createdAt?: string;
+  statusHistory?: { id: string; status: string; createdAt: string; note: string | null }[];
 }
 
 export interface Customer {
@@ -218,6 +236,21 @@ export interface Customer {
   companyName: string | null;
   phone: string | null;
   email: string | null;
+  status: string;
+}
+
+export interface CustomerAddress {
+  id: string;
+  label: string | null;
+  recipient: string;
+  phone: string | null;
+  address: string;
+  city: string;
+  isDefault: boolean;
+}
+
+export interface CustomerDetail extends Customer {
+  addresses: CustomerAddress[];
 }
 
 export interface CreateCustomerInput {
@@ -228,6 +261,16 @@ export interface CreateCustomerInput {
   companyName?: string;
   phone?: string;
   email?: string;
+  status?: string;
+}
+
+export interface CreateCustomerAddressInput {
+  label?: string;
+  recipient: string;
+  phone?: string;
+  address: string;
+  city: string;
+  isDefault?: boolean;
 }
 
 export interface AuditLog {
@@ -321,6 +364,9 @@ export const api = {
     list: () => request<Category[]>("/categories"),
     create: (input: { name: string; slug: string }) =>
       request<Category>("/categories", { method: "POST", body: JSON.stringify(input) }),
+    update: (id: string, input: Partial<{ name: string; slug: string }>) =>
+      request<Category>(`/categories/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    remove: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
   },
 
   stock: {
@@ -359,7 +405,7 @@ export const api = {
     list: () => request<Supplier[]>("/suppliers"),
     create: (input: CreateSupplierInput) =>
       request<Supplier>("/suppliers", { method: "POST", body: JSON.stringify(input) }),
-    update: (id: string, input: Partial<CreateSupplierInput>) =>
+    update: (id: string, input: Partial<CreateSupplierInput> & { status?: string }) =>
       request<Supplier>(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: string) => request<void>(`/suppliers/${id}`, { method: "DELETE" }),
   },
@@ -382,6 +428,7 @@ export const api = {
 
   deliveries: {
     list: (storeId?: string) => request<Delivery[]>(`/deliveries${storeId ? `?storeId=${storeId}` : ""}`),
+    findOne: (id: string) => request<Delivery>(`/deliveries/${id}`),
     updateStatus: (id: string, status: string, failureReason?: string) =>
       request<Delivery>(`/deliveries/${id}/status`, {
         method: "POST",
@@ -391,10 +438,15 @@ export const api = {
 
   customers: {
     list: (storeId: string) => request<Customer[]>(`/customers?storeId=${storeId}`),
+    findOne: (id: string) => request<CustomerDetail>(`/customers/${id}`),
     create: (input: CreateCustomerInput) =>
       request<Customer>("/customers", { method: "POST", body: JSON.stringify(input) }),
     update: (id: string, input: Partial<CreateCustomerInput>) =>
       request<Customer>(`/customers/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    addAddress: (id: string, input: CreateCustomerAddressInput) =>
+      request<CustomerDetail>(`/customers/${id}/addresses`, { method: "POST", body: JSON.stringify(input) }),
+    removeAddress: (id: string, addressId: string) =>
+      request<void>(`/customers/${id}/addresses/${addressId}`, { method: "DELETE" }),
   },
 
   users: {
