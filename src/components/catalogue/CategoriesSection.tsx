@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError, type Category } from "@/lib/api";
+import { tonePillClasses } from "@/lib/category-colors";
 import { slugify } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
@@ -67,13 +68,13 @@ export function CategoriesSection({ categories, onChanged }: CategoriesSectionPr
         {categories.map((c) => (
           <div
             key={c.id}
-            className="flex items-center gap-1.5 rounded-full border border-border bg-card py-1 pr-1.5 pl-3 text-sm"
+            className={`flex items-center gap-1.5 rounded-full py-1 pr-1.5 pl-3 text-sm font-medium ${tonePillClasses(c.name)}`}
           >
             <span>{c.name}</span>
-            <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.edit")}>
+            <button type="button" onClick={() => setEditing(c)} className="p-1 opacity-70 hover:opacity-100" aria-label={t("common.edit")}>
               <Pencil className="size-3" />
             </button>
-            <button type="button" onClick={() => setDeleting(c)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+            <button type="button" onClick={() => setDeleting(c)} className="p-1 opacity-70 hover:text-destructive hover:opacity-100" aria-label={t("common.delete")}>
               <Trash2 className="size-3" />
             </button>
           </div>

@@ -135,7 +135,7 @@ export function CashierPage() {
   if (status === "needs-open" && register) {
     return (
       <div className="flex h-full items-center justify-center px-6">
-        <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6 shadow-xs">
+        <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
           <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
             <LockKeyhole className="size-5" />
           </div>

@@ -28,7 +28,7 @@ const PIE_COLORS = [
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color?: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-md">
+    <div className="rounded-md border-2 border-border bg-popover px-3 py-2 text-xs">
       {label && <p className="mb-1 font-medium text-popover-foreground">{label}</p>}
       {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }}>

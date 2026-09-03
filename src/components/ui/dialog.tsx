@@ -30,11 +30,12 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6 shadow-lg outline-none",
+          "fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border-2 border-border bg-card p-6 outline-none",
           className,
         )}
         {...props}
       >
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-spectrum-coral" />
         {children}
         <DialogPrimitive.Close className="absolute top-4 right-4 text-muted-foreground transition-colors hover:text-foreground">
           <X className="size-4" />

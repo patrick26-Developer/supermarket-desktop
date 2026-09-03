@@ -70,7 +70,7 @@ export function AuditPage() {
         <select
           value={action}
           onChange={(e) => setAction(e.target.value)}
-          className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <option value="">{t("audit.allActions")}</option>
           {ACTIONS.map((a) => (
@@ -82,7 +82,7 @@ export function AuditPage() {
         <select
           value={resource}
           onChange={(e) => setResource(e.target.value)}
-          className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <option value="">{t("audit.allResources")}</option>
           {resources.map((r) => (

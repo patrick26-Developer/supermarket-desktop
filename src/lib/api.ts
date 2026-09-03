@@ -7,6 +7,17 @@
 import { getAccessToken } from "./auth-store";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
+// Origine du backend, sans le préfixe `/api` — pour résoudre les chemins
+// relatifs renvoyés par /uploads (ex. "/uploads/products/xxx.jpg") en URL
+// absolue affichable dans un <img>.
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
+/** Résout un chemin d'image renvoyé par le backend (relatif ou URL externe déjà absolue). */
+export function resolveAssetUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/^(https?:)?\/\//i.test(url)) return url;
+  return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -36,6 +47,38 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       : contentType.includes("application/json")
         ? await res.json()
         : await res.text();
+
+  if (!res.ok) {
+    const message =
+      body && typeof body === "object" && "message" in body
+        ? Array.isArray((body as { message: unknown }).message)
+          ? (body as { message: string[] }).message.join(", ")
+          : String((body as { message: unknown }).message)
+        : `Erreur HTTP ${res.status}`;
+    throw new ApiError(res.status, message);
+  }
+
+  return body as T;
+}
+
+/**
+ * Upload multipart séparé de `request()` : le navigateur doit fixer lui-même
+ * l'en-tête `Content-Type` (avec la boundary du multipart), donc on ne peut
+ * pas réutiliser le `Content-Type: application/json` fixé par `request()`.
+ */
+async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const token = getAccessToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json") ? await res.json() : await res.text();
 
   if (!res.ok) {
     const message =
@@ -358,6 +401,10 @@ export const api = {
     update: (id: string, input: Partial<CreateProductInput>) =>
       request<Product>(`/products/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     remove: (id: string) => request<void>(`/products/${id}`, { method: "DELETE" }),
+  },
+
+  uploads: {
+    productImage: (file: File) => uploadFile<{ url: string }>("/uploads/product-image", file),
   },
 
   categories: {

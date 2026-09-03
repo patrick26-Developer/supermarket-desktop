@@ -117,7 +117,7 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="mt-3 flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="mt-3 flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <option value="">{t("purchasing.statusFilter")}</option>
           {statuses.map((s) => (
@@ -399,7 +399,7 @@ function NewPurchaseOrderForm({
         <select
           value={supplierId}
           onChange={(e) => setSupplierId(e.target.value)}
-          className="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           {suppliers.map((s) => (
             <option key={s.id} value={s.id}>
@@ -413,7 +413,7 @@ function NewPurchaseOrderForm({
         <Label>{t("purchasing.addProduct")}</Label>
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("common.search")} className="mt-1.5 max-w-sm" />
         {results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full max-w-sm overflow-hidden rounded-md border border-border bg-popover shadow-md">
+          <div className="absolute z-10 mt-1 w-full max-w-sm overflow-hidden rounded-md border-2 border-border bg-popover">
             {results.map((p) => (
               <button
                 key={p.id}

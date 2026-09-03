@@ -23,6 +23,13 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
 } as const;
 
+const CAPABILITY_TINTS = [
+  "bg-spectrum-coral/70",
+  "bg-spectrum-teal/70",
+  "bg-spectrum-amber/70",
+  "bg-spectrum-violet/70",
+];
+
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const { t } = useI18n();
   const [email, setEmail] = useState("");
@@ -54,25 +61,33 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   return (
     <div className="grid h-full overflow-y-auto lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
       {/* Panneau de marque */}
-      <div className="hidden bg-brand-panel px-16 py-14 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="relative hidden overflow-hidden bg-brand-panel px-16 py-14 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-between">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 60% 50% at 15% 0%, color-mix(in oklab, var(--primary) 55%, transparent), transparent), radial-gradient(ellipse 55% 45% at 100% 100%, color-mix(in oklab, var(--accent) 45%, transparent), transparent), radial-gradient(ellipse 40% 35% at 90% 10%, color-mix(in oklab, var(--spectrum-coral) 35%, transparent), transparent)",
+          }}
+        />
+        <div className="relative flex items-center gap-2.5">
           <img src={logoUrl} alt="" className="size-9" />
           <span className="text-lg font-semibold tracking-tight">{t("appName")}</span>
         </div>
 
-        <div className="max-w-md space-y-4">
+        <div className="relative max-w-md space-y-4">
           <h1 className="text-3xl leading-tight font-semibold text-balance">{t("login.tagline")}</h1>
           <p className="text-sm leading-relaxed text-brand-panel-foreground/65">{t("login.pitch")}</p>
         </div>
 
-        <motion.ul className="space-y-3.5" variants={listVariants} initial="hidden" animate="show">
-          {capabilities.map(({ icon: Icon, label }) => (
+        <motion.ul className="relative space-y-3.5" variants={listVariants} initial="hidden" animate="show">
+          {capabilities.map(({ icon: Icon, label }, index) => (
             <motion.li
               key={label}
               variants={itemVariants}
               className="flex items-center gap-3 text-sm text-brand-panel-foreground/80"
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/25 text-primary-foreground">
+              <span className={`flex size-7 shrink-0 items-center justify-center rounded-md text-white ${CAPABILITY_TINTS[index % CAPABILITY_TINTS.length]}`}>
                 <Icon className="size-3.5" />
               </span>
               {label}

@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, LoaderCircle, Package, Pencil, Plus, S
 import { useEffect, useMemo, useState } from "react";
 
 import { CategoriesSection } from "@/components/catalogue/CategoriesSection";
+import { ImageUploadField } from "@/components/catalogue/ImageUploadField";
 import { ProductAvatar } from "@/components/catalogue/ProductAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDefaultStore } from "@/hooks/use-default-store";
 import { api, ApiError, type Category, type CreateProductInput, type Product } from "@/lib/api";
+import { tonePillClasses } from "@/lib/category-colors";
 import { formatCurrency, slugify } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
@@ -152,7 +154,7 @@ export function CataloguePage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <option value="">{t("catalogue.allCategories")}</option>
           {categories.map((c) => (
@@ -205,8 +207,16 @@ export function CataloguePage() {
                       <p className="font-medium text-foreground">{p.name}</p>
                       <p className="text-xs text-muted-foreground">{p.sku}</p>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {categoryById.get(p.categoryId ?? "") ?? "—"}
+                    <td className="px-4 py-3">
+                      {categoryById.get(p.categoryId ?? "") ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${tonePillClasses(categoryById.get(p.categoryId ?? "")!)}`}
+                        >
+                          {categoryById.get(p.categoryId ?? "")}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">{formatCurrency(Number(p.costPrice))}</td>
                     <td className="px-4 py-3 text-muted-foreground">{Number(p.taxRate)}%</td>
@@ -341,11 +351,12 @@ function ProductForm({
 
   const formBody = (
     <form onSubmit={handleSubmit} className={isEdit ? "" : "mt-4 rounded-lg border border-border bg-card p-5"}>
-      {isEdit && (
-        <div className="mb-4 flex justify-center">
-          <ProductAvatar imageUrl={imageUrl || null} name={name} size="lg" />
+      <div className="mb-4">
+        <Label>{t("catalogue.image")}</Label>
+        <div className="mt-1.5">
+          <ImageUploadField value={imageUrl} onChange={setImageUrl} name={name || "?"} />
         </div>
-      )}
+      </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="col-span-2 space-y-1.5">
           <Label>{t("common.name")}</Label>
@@ -362,7 +373,7 @@ function ProductForm({
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <option value="">—</option>
             {categories.map((c) => (
@@ -375,14 +386,6 @@ function ProductForm({
         <div className="col-span-2 space-y-1.5 sm:col-span-4">
           <Label>{t("catalogue.description")}</Label>
           <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div className="col-span-2 space-y-1.5 sm:col-span-4">
-          <Label>{t("catalogue.image")}</Label>
-          <Input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://…"
-          />
         </div>
         <div className="space-y-1.5">
           <Label>{t("catalogue.costPrice")}</Label>
@@ -406,7 +409,7 @@ function ProductForm({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               <option value="ACTIVE">ACTIVE</option>
               <option value="INACTIVE">INACTIVE</option>

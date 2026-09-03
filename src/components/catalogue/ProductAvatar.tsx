@@ -1,5 +1,7 @@
 import { Package } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { resolveAssetUrl } from "@/lib/api";
 
 interface ProductAvatarProps {
   imageUrl: string | null;
@@ -8,21 +10,24 @@ interface ProductAvatarProps {
 }
 
 /**
- * Image du produit si disponible (Product.imageUrl, backend), sinon une
- * icône générique dans une tuile colorée — aucun produit n'a encore de
- * vraie photo (pas d'upload de fichier côté backend, juste une URL), donc
- * ce repli n'est pas une exception mais l'état par défaut attendu pour
- * l'instant.
+ * Image du produit si disponible (Product.imageUrl — soit un fichier
+ * uploadé, chemin relatif résolu via resolveAssetUrl, soit une URL externe
+ * collée telle quelle), sinon une icône générique dans une tuile colorée.
  */
 export function ProductAvatar({ imageUrl, name, size = "sm" }: ProductAvatarProps) {
   const [failed, setFailed] = useState(false);
   const dim = size === "lg" ? "size-16" : "size-10";
   const iconDim = size === "lg" ? "size-7" : "size-4.5";
+  const resolved = resolveAssetUrl(imageUrl);
 
-  if (imageUrl && !failed) {
+  // Réautorise une nouvelle tentative de chargement quand la source change
+  // (ex. image tout juste uploadée après un échec précédent).
+  useEffect(() => setFailed(false), [resolved]);
+
+  if (resolved && !failed) {
     return (
       <img
-        src={imageUrl}
+        src={resolved}
         alt={name}
         onError={() => setFailed(true)}
         className={`${dim} shrink-0 rounded-md border border-border object-cover`}
@@ -31,7 +36,9 @@ export function ProductAvatar({ imageUrl, name, size = "sm" }: ProductAvatarProp
   }
 
   return (
-    <div className={`flex ${dim} shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground`}>
+    <div
+      className={`flex ${dim} shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-secondary to-secondary/60 text-secondary-foreground`}
+    >
       <Package className={iconDim} />
     </div>
   );

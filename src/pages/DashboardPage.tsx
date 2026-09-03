@@ -10,12 +10,12 @@ import { useI18n } from "@/lib/i18n";
 import type { NavTab } from "@/types/nav";
 
 const MODULES: { tab: NavTab; icon: typeof Boxes; titleKey: string; descKey: string; tint: string }[] = [
-  { tab: "caisse", icon: ShoppingCart, titleKey: "nav.caisse", descKey: "dashboard.caisseDesc", tint: "bg-primary/10 text-primary" },
-  { tab: "catalogue", icon: Boxes, titleKey: "nav.catalogue", descKey: "dashboard.catalogueDesc", tint: "bg-accent/15 text-accent-foreground" },
-  { tab: "achats", icon: Truck, titleKey: "nav.achats", descKey: "dashboard.achatsDesc", tint: "bg-secondary text-secondary-foreground" },
-  { tab: "clients", icon: Users, titleKey: "nav.clients", descKey: "dashboard.clientsDesc", tint: "bg-primary/10 text-primary" },
-  { tab: "rapports", icon: FileBarChart, titleKey: "nav.rapports", descKey: "dashboard.rapportsDesc", tint: "bg-accent/15 text-accent-foreground" },
-  { tab: "audit", icon: ShieldCheck, titleKey: "nav.audit", descKey: "dashboard.auditDesc", tint: "bg-secondary text-secondary-foreground" },
+  { tab: "caisse", icon: ShoppingCart, titleKey: "nav.caisse", descKey: "dashboard.caisseDesc", tint: "bg-gradient-to-br from-spectrum-coral to-spectrum-coral/70" },
+  { tab: "catalogue", icon: Boxes, titleKey: "nav.catalogue", descKey: "dashboard.catalogueDesc", tint: "bg-gradient-to-br from-spectrum-amber to-spectrum-amber/70" },
+  { tab: "achats", icon: Truck, titleKey: "nav.achats", descKey: "dashboard.achatsDesc", tint: "bg-gradient-to-br from-spectrum-violet to-spectrum-violet/70" },
+  { tab: "clients", icon: Users, titleKey: "nav.clients", descKey: "dashboard.clientsDesc", tint: "bg-gradient-to-br from-spectrum-pink to-spectrum-pink/70" },
+  { tab: "rapports", icon: FileBarChart, titleKey: "nav.rapports", descKey: "dashboard.rapportsDesc", tint: "bg-gradient-to-br from-spectrum-teal to-spectrum-teal/70" },
+  { tab: "audit", icon: ShieldCheck, titleKey: "nav.audit", descKey: "dashboard.auditDesc", tint: "bg-gradient-to-br from-spectrum-azure to-spectrum-azure/70" },
 ];
 
 const gridVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
@@ -77,9 +77,9 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
             variants={cardVariants}
             className="text-left"
           >
-            <Card className="border-border/80 py-5 shadow-none transition-colors hover:border-primary/40">
+            <Card className="border-border/80 py-5 transition-colors hover:border-primary/40">
               <CardHeader className="gap-2 px-5">
-                <div className={`flex size-9 items-center justify-center rounded-md ${tint}`}>
+                <div className={`flex size-9 items-center justify-center rounded-md text-white ${tint}`}>
                   <Icon className="size-4.5" />
                 </div>
                 <CardTitle className="text-sm font-semibold">{t(titleKey)}</CardTitle>

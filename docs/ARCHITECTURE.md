@@ -24,7 +24,7 @@ Client desktop Electron pour la gestion d'une chaîne de superettes, consommant 
 | Composants | shadcn/ui, style "new-york", posé manuellement (voir gotcha ci-dessous) |
 | Icônes | lucide-react |
 | Typographie | `Manrope Variable` seule (titres inclus), auto-hébergée via `@fontsource-variable/manrope` — pas de CDN à l'exécution |
-| Palette | Bleu/ardoise/or sourcé sur palettedecouleur.net (Palette 787), style admin panel professionnel — jetons dans `src/index.css`, détail dans `docs/PROGRESS.md` |
+| Palette | Bleu/ardoise/or sourcé sur palettedecouleur.net (Palette 787) + 8 teintes "spectre" pour catégories/modules (`--spectrum-*`, dégradés, pas d'ombres portées) — jetons dans `src/index.css`, détail dans `docs/PROGRESS.md` |
 | Animation | `motion` (Framer Motion), micro-interactions ciblées (transitions d'entrée, listes en cascade) — jamais sur les actions répétitives de caisse |
 | Graphiques | `recharts` — aire, barres, donut sur l'onglet Rapports |
 | Thème | Clair/sombre, `src/hooks/use-theme.ts`, persisté (`localStorage`) + `prefers-color-scheme` |
@@ -53,12 +53,13 @@ supermarket-desktop/
 │   │   ├── api.ts            # client fetch (auth Bearer + endpoints typés, tous les modules)
 │   │   ├── auth-store.ts     # jeton d'accès en mémoire
 │   │   ├── format.ts         # formatCurrency (FCFA), slugify, formatDate
+│   │   ├── category-colors.ts # teinte "spectre" déterministe par nom de catégorie (pastilles, tuiles)
 │   │   ├── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
 │   │   └── i18n/              # I18nProvider/useI18n + dictionnaire fr/en
 │   ├── components/
-│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge, Dialog…)
+│   │   ├── ui/                # composants shadcn (Button, Input, Label, Card, Badge, Dialog…) — zéro shadow-*, dégradés à la place
 │   │   ├── pos/                # ProductSearch, CartPanel — écran Caisse
-│   │   ├── catalogue/          # ProductAvatar (image ou icône de repli), CategoriesSection (CRUD)
+│   │   ├── catalogue/          # ProductAvatar (image ou icône de repli), ImageUploadField (upload réel + lien), CategoriesSection (CRUD)
 │   │   ├── purchasing/         # SuppliersSection, PurchaseOrdersSection (+ détails lecture seule), DeliveriesSection (+ détails/historique statut)
 │   │   ├── reports/            # Charts.tsx — graphiques recharts
 │   │   ├── TitleBar.tsx        # barre de titre custom (boutons système + thème + langue)

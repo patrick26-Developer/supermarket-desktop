@@ -43,6 +43,23 @@
 
   --brand-panel: #384454;
   --brand-panel-foreground: #f5f6fa;
+
+  /*
+   * Palette "spectre" — retour utilisateur explicite : plus de couleur,
+   * inspiration Amazon/Alibaba (tags de catégorie multicolores, pas un gris
+   * monochrome). Huit teintes vives distinctes, choisies pour rester
+   * lisibles en texte sur fond clair ET sombre à opacité réduite (utilisées
+   * en `bg-[var(...)]/15 text-[var(...)]`, jamais en aplat plein sur du texte
+   * — voir src/lib/category-colors.ts).
+   */
+  --spectrum-coral: #e8593f;
+  --spectrum-amber: #d68a1f;
+  --spectrum-lime: #6b9b2f;
+  --spectrum-teal: #1f9488;
+  --spectrum-azure: #2f7fd6;
+  --spectrum-violet: #7c5fd6;
+  --spectrum-pink: #d6428f;
+  --spectrum-slate: #5a6b8c;
 }
 
 .dark {
@@ -76,6 +93,16 @@
 
   --brand-panel: #10151e;
   --brand-panel-foreground: #e7e9ee;
+
+  /* Mêmes teintes, éclaircies pour rester lisibles sur fond sombre. */
+  --spectrum-coral: #f07a63;
+  --spectrum-amber: #e8a83f;
+  --spectrum-lime: #8fc157;
+  --spectrum-teal: #3fb8aa;
+  --spectrum-azure: #5c9de8;
+  --spectrum-violet: #9c85e8;
+  --spectrum-pink: #e86bab;
+  --spectrum-slate: #8b9ab5;
 }
 
 @theme inline {
@@ -100,6 +127,15 @@
   --color-ring: var(--ring);
   --color-brand-panel: var(--brand-panel);
   --color-brand-panel-foreground: var(--brand-panel-foreground);
+
+  --color-spectrum-coral: var(--spectrum-coral);
+  --color-spectrum-amber: var(--spectrum-amber);
+  --color-spectrum-lime: var(--spectrum-lime);
+  --color-spectrum-teal: var(--spectrum-teal);
+  --color-spectrum-azure: var(--spectrum-azure);
+  --color-spectrum-violet: var(--spectrum-violet);
+  --color-spectrum-pink: var(--spectrum-pink);
+  --color-spectrum-slate: var(--spectrum-slate);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

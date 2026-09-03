@@ -126,7 +126,7 @@ export function CartPanel({
             id="payment-method"
             value={method}
             onChange={(e) => setMethod(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             {paymentMethods.map((m) => (
               <option key={m.value} value={m.value}>
@@ -152,6 +152,7 @@ export function CartPanel({
 
         <Button
           type="button"
+          variant="brand"
           className="w-full"
           size="lg"
           disabled={isEmpty || submitting || totals.total <= 0}
