@@ -16,17 +16,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDefaultStore } from "@/hooks/use-default-store";
-import { api, ApiError, type Category, type CreateProductInput, type Product } from "@/lib/api";
+import { api, ApiError, type Category, type CreateProductInput, type Permission, type Product } from "@/lib/api";
 import { tonePillClasses } from "@/lib/category-colors";
 import { formatCurrency, slugify } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { can } from "@/lib/permissions";
 
 type SortKey = "name" | "costPrice" | "stock";
 type SortDir = "asc" | "desc";
 
-export function CataloguePage() {
+export function CataloguePage({ permissions }: { permissions: Permission[] }) {
   const { t } = useI18n();
   const { storeId } = useDefaultStore();
+  const canCreate = can(permissions, "PRODUCTS", "CREATE");
+  const canUpdate = can(permissions, "PRODUCTS", "UPDATE");
+  const canDelete = can(permissions, "PRODUCTS", "DELETE");
+  const canReadCategories = can(permissions, "CATEGORIES", "READ");
+  const canManageCategories =
+    can(permissions, "CATEGORIES", "CREATE") ||
+    can(permissions, "CATEGORIES", "UPDATE") ||
+    can(permissions, "CATEGORIES", "DELETE");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stockByProduct, setStockByProduct] = useState<Map<string, number>>(new Map());
@@ -44,15 +53,23 @@ export function CataloguePage() {
     setLoading(true);
     setError(null);
     try {
+      // Requêtes indépendantes : CATEGORIES et STOCK ne sont pas accordés à
+      // tous les rôles ayant PRODUCTS:READ (ex. Caissier n'a ni l'un ni
+      // l'autre) — un 403 dessus ne doit pas faire échouer l'affichage des
+      // produits eux-mêmes.
       const [productList, categoryList] = await Promise.all([
         api.products.search(query),
-        api.categories.list(),
+        canReadCategories ? api.categories.list() : Promise.resolve([]),
       ]);
       setProducts(productList);
       setCategories(categoryList);
       if (storeId) {
-        const stock = await api.stock.listByStore(storeId);
-        setStockByProduct(new Map(stock.map((s) => [s.productId, Number(s.availableQty)])));
+        try {
+          const stock = await api.stock.listByStore(storeId);
+          setStockByProduct(new Map(stock.map((s) => [s.productId, Number(s.availableQty)])));
+        } catch {
+          setStockByProduct(new Map());
+        }
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Impossible de contacter le serveur");
@@ -120,13 +137,15 @@ export function CataloguePage() {
           <p className="text-sm font-medium text-primary">{t("catalogue.eyebrow")}</p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("catalogue.title")}</h1>
         </div>
-        <Button onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X /> : <Plus />}
-          {showForm ? t("common.cancel") : t("catalogue.newProduct")}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X /> : <Plus />}
+            {showForm ? t("common.cancel") : t("catalogue.newProduct")}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {canCreate && showForm && (
         <ProductForm
           categories={categories}
           storeId={storeId}
@@ -137,7 +156,9 @@ export function CataloguePage() {
         />
       )}
 
-      <CategoriesSection categories={categories} onChanged={load} />
+      {canReadCategories && (
+        <CategoriesSection categories={categories} onChanged={load} canManage={canManageCategories} />
+      )}
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <div className="relative">
@@ -214,22 +235,28 @@ export function CataloguePage() {
                   return (
                     <div
                       key={p.id}
-                      onClick={() => setEditing(p)}
-                      className="group flex cursor-pointer flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-secondary/30"
+                      onClick={() => canUpdate && setEditing(p)}
+                      className={`group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors ${canUpdate ? "cursor-pointer hover:border-primary/40 hover:bg-secondary/30" : ""}`}
                     >
                       <div className="flex items-start justify-between">
                         <ProductAvatar imageUrl={p.imageUrl} name={p.name} categoryName={section.name} size="lg" />
-                        <div
-                          className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
-                            <Pencil className="size-3.5" />
-                          </button>
-                          <button type="button" onClick={() => setDeleting(p)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        </div>
+                        {(canUpdate || canDelete) && (
+                          <div
+                            className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {canUpdate && (
+                              <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
+                                <Pencil className="size-3.5" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button type="button" onClick={() => setDeleting(p)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">{p.name}</p>

@@ -5,10 +5,11 @@ import { DeliveriesSection } from "@/components/purchasing/DeliveriesSection";
 import { PurchaseOrdersSection } from "@/components/purchasing/PurchaseOrdersSection";
 import { SuppliersSection } from "@/components/purchasing/SuppliersSection";
 import { useDefaultStore } from "@/hooks/use-default-store";
-import { api, ApiError, type Delivery, type PurchaseOrder, type Supplier } from "@/lib/api";
+import { api, ApiError, type Delivery, type Permission, type PurchaseOrder, type Supplier } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { can } from "@/lib/permissions";
 
-export function PurchasingPage() {
+export function PurchasingPage({ permissions }: { permissions: Permission[] }) {
   const { t } = useI18n();
   const { storeId, loading: storeLoading } = useDefaultStore();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -17,15 +18,21 @@ export function PurchasingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const canReadOrders = can(permissions, "PURCHASE_ORDERS", "READ");
+  const canReadDeliveries = can(permissions, "DELIVERIES", "READ");
+
   async function load() {
     if (!storeId) return;
     setLoading(true);
     setError(null);
     try {
+      // Requêtes indépendantes : un rôle peut avoir SUPPLIERS:READ sans avoir
+      // PURCHASE_ORDERS ou DELIVERIES (ex. Responsable achats n'a pas
+      // DELIVERIES) — un 403 sur l'une ne doit pas faire échouer les autres.
       const [supplierList, orderList, deliveryList] = await Promise.all([
         api.suppliers.list(),
-        api.purchaseOrders.list(storeId),
-        api.deliveries.list(storeId),
+        canReadOrders ? api.purchaseOrders.list(storeId) : Promise.resolve([]),
+        canReadDeliveries ? api.deliveries.list(storeId) : Promise.resolve([]),
       ]);
       setSuppliers(supplierList);
       setOrders(orderList);
@@ -58,12 +65,26 @@ export function PurchasingPage() {
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
       <div className="mt-6">
-        <SuppliersSection suppliers={suppliers} onChanged={load} />
+        <SuppliersSection
+          suppliers={suppliers}
+          onChanged={load}
+          canCreate={can(permissions, "SUPPLIERS", "CREATE")}
+          canUpdate={can(permissions, "SUPPLIERS", "UPDATE")}
+          canDelete={can(permissions, "SUPPLIERS", "DELETE")}
+        />
       </div>
 
-      {storeId && <PurchaseOrdersSection orders={orders} suppliers={suppliers} storeId={storeId} onChanged={load} />}
+      {storeId && canReadOrders && (
+        <PurchaseOrdersSection
+          orders={orders}
+          suppliers={suppliers}
+          storeId={storeId}
+          onChanged={load}
+          canCreate={can(permissions, "PURCHASE_ORDERS", "CREATE")}
+        />
+      )}
 
-      <DeliveriesSection deliveries={deliveries} onChanged={load} />
+      {canReadDeliveries && <DeliveriesSection deliveries={deliveries} onChanged={load} />}
     </div>
   );
 }

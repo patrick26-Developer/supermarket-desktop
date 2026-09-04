@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import { TitleBar } from "@/components/TitleBar";
-import type { AuthUser } from "@/lib/api";
+import { api, type AuthUser, type Permission } from "@/lib/api";
 import { setAccessToken } from "@/lib/auth-store";
 import { AuditPage } from "@/pages/AuditPage";
 import { CashierPage } from "@/pages/CashierPage";
@@ -18,7 +18,10 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import type { NavTab } from "@/types/nav";
 
-const TAB_PAGES: Record<Exclude<NavTab, "dashboard" | "profile" | "settings">, React.ComponentType> = {
+const TAB_PAGES: Record<
+  Exclude<NavTab, "dashboard" | "profile" | "settings">,
+  React.ComponentType<{ permissions: Permission[] }>
+> = {
   caisse: CashierPage,
   catalogue: CataloguePage,
   achats: PurchasingPage,
@@ -30,26 +33,37 @@ const TAB_PAGES: Record<Exclude<NavTab, "dashboard" | "profile" | "settings">, R
 
 export function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
 
-  function handleLoginSuccess(loggedInUser: AuthUser, accessToken: string) {
+  async function handleLoginSuccess(loggedInUser: AuthUser, accessToken: string) {
     setAccessToken(accessToken);
     setUser(loggedInUser);
+    // Permissions effectives du rôle — pilotent l'affichage des onglets/actions
+    // (voir src/lib/permissions.ts). Chargées une fois à la connexion : elles
+    // ne changent pas en cours de session (un changement de rôle nécessite de
+    // toute façon de se reconnecter pour obtenir un nouveau token).
+    try {
+      setPermissions(await api.auth.permissions());
+    } catch {
+      setPermissions([]);
+    }
   }
 
   function handleLogout() {
     setAccessToken(null);
     setUser(null);
+    setPermissions([]);
     setActiveTab("dashboard");
   }
 
   function renderTab() {
     if (!user) return null;
-    if (activeTab === "dashboard") return <DashboardPage user={user} onNavigate={setActiveTab} />;
+    if (activeTab === "dashboard") return <DashboardPage user={user} permissions={permissions} onNavigate={setActiveTab} />;
     if (activeTab === "profile") return <ProfilePage user={user} onUserUpdate={setUser} />;
     if (activeTab === "settings") return <SettingsPage user={user} />;
     const TabPage = TAB_PAGES[activeTab];
-    return <TabPage />;
+    return <TabPage permissions={permissions} />;
   }
 
   return (
@@ -76,7 +90,13 @@ export function App() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              <AppShell user={user} activeTab={activeTab} onNavigate={setActiveTab} onLogout={handleLogout}>
+              <AppShell
+                user={user}
+                permissions={permissions}
+                activeTab={activeTab}
+                onNavigate={setActiveTab}
+                onLogout={handleLogout}
+              >
                 {renderTab()}
               </AppShell>
             </motion.div>

@@ -2,6 +2,20 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-04 (suite) — Interface réellement adaptée au rôle connecté
+
+Retour utilisateur explicite : "attaquer un autre utilisateur [rôle]". Le problème concret constaté : n'importe quel rôle connecté voyait tous les onglets (Achats, Rapports, Audit, Utilisateurs…) et tous les boutons Créer/Modifier/Supprimer, y compris ceux que son rôle ne l'autorise pas à utiliser — seul le backend renvoyait un 403 en silence.
+
+**Permissions effectives récupérées à la connexion** — `api.auth.permissions()` (nouveau, voir `supermarket-backend/docs/PROGRESS.md`) appelé une fois dans `App.tsx` juste après le login, stocké en state et transmis à `AppShell` et à chaque page. `src/lib/permissions.ts` (nouveau) : `can()`/`canAny()` pour tester une permission précise, `canSeeTab()` + `TAB_PERMISSION` pour la règle de visibilité de chaque onglet (ex. `achats` nécessite `SUPPLIERS:READ`, `audit` nécessite `AUDIT_LOGS:READ` — reflète `ROLE_GRANTS` côté backend).
+
+**Onglets et tuiles du tableau de bord** — `AppShell.tsx` et `DashboardPage.tsx` ne montrent désormais que ce que le rôle peut réellement ouvrir (remplace l'ancien filtre uniquement sur `SUPER_ADMIN`/`ADMIN` pour l'onglet Utilisateurs — un Gérant de magasin, qui a `USERS:READ` mais pas `USERS:CREATE`/`UPDATE`, voit maintenant la liste en lecture seule, ce qui est le comportement RBAC correct).
+
+**Boutons Créer/Modifier/Supprimer masqués par permission précise** — appliqué à Catalogue (produits + catégories), Utilisateurs, Fournisseurs, Commandes fournisseurs, Clients (+ adresses) : chaque page calcule `canCreate`/`canUpdate`/`canDelete` à partir des permissions reçues et masque bouton et formulaire en conséquence, plutôt que de les afficher et laisser échouer la requête.
+
+**Bug trouvé et corrigé en testant avec un vrai compte non-admin** — plusieurs pages appelaient des endpoints secondaires (`/categories`, `/stock`, `/roles`) **sans condition**, même quand le rôle n'y avait pas droit. Un seul 403 dans un `Promise.all` fait échouer tout le chargement : un Caissier (qui a `PRODUCTS:READ` mais aucun droit sur `CATEGORIES`/`STOCK`) se retrouvait avec un catalogue entièrement cassé ("Permission manquante : READ sur CATEGORIES") alors que ses produits étaient parfaitement accessibles. Corrigé dans `CataloguePage`, `UsersPage` et `PurchasingPage` : chaque requête secondaire ne part que si la permission est là, sinon elle est court-circuitée à une valeur vide sans faire échouer le reste.
+
+**Vérifié contre un vrai compte CASHIER** (créé pour le test, `test.cashier.rbac@superette.local`) — via Playwright sur le build packagé : barre latérale conforme (Tableau de bord, Caisse, Catalogue, Clients visibles ; Achats, Rapports, Audit, Utilisateurs absents), Catalogue sans bouton "Nouveau produit" ni "Nouvelle catégorie", Clients avec bouton "Nouveau client" (Caissier a `CUSTOMERS:CREATE`), zéro erreur bloquante après correction. Accès aux 44 produits reconfirmé indépendamment par appel API direct.
+
 ## 2026-09-04 — Catalogue par catégories avec icônes, images en Caisse, page Profil/Paramètres
 
 Retour utilisateur groupé : (1) 30 produits supplémentaires, bien répartis par catégorie plutôt qu'entassés ; (2) catalogue "désordonné", à structurer clairement avec image/description par produit, y compris à la Caisse ; (3) "trop d'utilisateurs" dans la liste ; (4) pas d'onglet Profil/Paramètres ; (5) pas de gestion complète du compte côté connexion (mot de passe oublié, changer son mot de passe, photo de profil).

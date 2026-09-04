@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDefaultStore } from "@/hooks/use-default-store";
-import { api, type AuthUser, type SalesSummary } from "@/lib/api";
+import { api, type AuthUser, type Permission, type SalesSummary } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { canSeeTab } from "@/lib/permissions";
 import type { NavTab } from "@/types/nav";
 
 const MODULES: { tab: NavTab; icon: typeof Boxes; titleKey: string; descKey: string; tint: string }[] = [
@@ -26,17 +27,20 @@ const cardVariants = {
 
 interface DashboardPageProps {
   user: AuthUser;
+  permissions: Permission[];
   onNavigate: (tab: NavTab) => void;
 }
 
-export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ user, permissions, onNavigate }: DashboardPageProps) {
   const { t } = useI18n();
   const { storeId } = useDefaultStore();
   const [summary, setSummary] = useState<SalesSummary | null>(null);
+  const [summaryDenied, setSummaryDenied] = useState(false);
+  const visibleModules = MODULES.filter((m) => canSeeTab(permissions, m.tab));
 
   useEffect(() => {
     if (!storeId) return;
-    api.reports.salesSummary(storeId).then(setSummary).catch(() => {});
+    api.reports.salesSummary(storeId).then(setSummary).catch(() => setSummaryDenied(true));
   }, [storeId]);
 
   return (
@@ -47,21 +51,23 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
       </h1>
       <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">{t("dashboard.subtitle")}</p>
 
-      <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-        {summary ? (
-          <>
-            <TrendingUp className="size-4 text-primary" />
-            <span>
-              <span className="font-semibold text-foreground">{summary.salesCount}</span>{" "}
-              {summary.salesCount === 1 ? t("dashboard.salesSuffix") : t("dashboard.salesSuffixPlural")} ·{" "}
-              <span className="font-semibold text-foreground">{formatCurrency(summary.totalRevenue)}</span>{" "}
-              {t("dashboard.revenueSuffix")}
-            </span>
-          </>
-        ) : (
-          <LoaderCircle className="size-4 animate-spin" />
-        )}
-      </div>
+      {!summaryDenied && (
+        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          {summary ? (
+            <>
+              <TrendingUp className="size-4 text-primary" />
+              <span>
+                <span className="font-semibold text-foreground">{summary.salesCount}</span>{" "}
+                {summary.salesCount === 1 ? t("dashboard.salesSuffix") : t("dashboard.salesSuffixPlural")} ·{" "}
+                <span className="font-semibold text-foreground">{formatCurrency(summary.totalRevenue)}</span>{" "}
+                {t("dashboard.revenueSuffix")}
+              </span>
+            </>
+          ) : (
+            <LoaderCircle className="size-4 animate-spin" />
+          )}
+        </div>
+      )}
 
       <motion.div
         className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -69,7 +75,7 @@ export function DashboardPage({ user, onNavigate }: DashboardPageProps) {
         initial="hidden"
         animate="show"
       >
-        {MODULES.map(({ tab, icon: Icon, titleKey, descKey, tint }) => (
+        {visibleModules.map(({ tab, icon: Icon, titleKey, descKey, tint }) => (
           <motion.button
             key={tab}
             type="button"

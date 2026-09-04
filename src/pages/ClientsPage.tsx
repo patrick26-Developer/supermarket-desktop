@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDefaultStore } from "@/hooks/use-default-store";
-import { api, ApiError, type Customer, type CustomerDetail } from "@/lib/api";
+import { api, ApiError, type Customer, type CustomerDetail, type Permission } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { can } from "@/lib/permissions";
 
-export function ClientsPage() {
+export function ClientsPage({ permissions }: { permissions: Permission[] }) {
   const { t } = useI18n();
   const { storeId, loading: storeLoading } = useDefaultStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -19,6 +20,8 @@ export function ClientsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [query, setQuery] = useState("");
+  const canCreate = can(permissions, "CUSTOMERS", "CREATE");
+  const canUpdate = can(permissions, "CUSTOMERS", "UPDATE");
 
   async function load() {
     if (!storeId) return;
@@ -64,13 +67,15 @@ export function ClientsPage() {
           <p className="text-sm font-medium text-primary">{t("clients.eyebrow")}</p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("clients.title")}</h1>
         </div>
-        <Button onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X /> : <Plus />}
-          {showForm ? t("common.cancel") : t("clients.newClient")}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X /> : <Plus />}
+            {showForm ? t("common.cancel") : t("clients.newClient")}
+          </Button>
+        )}
       </div>
 
-      {showForm && storeId && (
+      {canCreate && showForm && storeId && (
         <CustomerForm
           storeId={storeId}
           onDone={() => {
@@ -113,8 +118,8 @@ export function ClientsPage() {
               {filtered.map((c) => (
                 <tr
                   key={c.id}
-                  onClick={() => setEditing(c)}
-                  className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                  onClick={() => canUpdate && setEditing(c)}
+                  className={`border-b border-border last:border-0 ${canUpdate ? "cursor-pointer hover:bg-secondary/50" : ""}`}
                 >
                   <td className="px-4 py-3 font-medium text-foreground">
                     {c.companyName || `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() || "—"}
@@ -128,9 +133,11 @@ export function ClientsPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
-                      <Pencil className="size-3.5" />
-                    </button>
+                    {canUpdate && (
+                      <button type="button" onClick={() => setEditing(c)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
+                        <Pencil className="size-3.5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -154,7 +161,7 @@ export function ClientsPage() {
               }}
             />
             <div className="mt-5 border-t border-border pt-4">
-              <AddressesSection customerId={editing.id} />
+              <AddressesSection customerId={editing.id} canManage={canUpdate} />
             </div>
           </DialogContent>
         </Dialog>
@@ -280,7 +287,7 @@ function CustomerForm({
   );
 }
 
-function AddressesSection({ customerId }: { customerId: string }) {
+function AddressesSection({ customerId, canManage }: { customerId: string; canManage: boolean }) {
   const { t } = useI18n();
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -312,15 +319,17 @@ function AddressesSection({ customerId }: { customerId: string }) {
     <div>
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-foreground">{t("clients.addresses")}</p>
-        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
-          {showForm ? t("common.cancel") : t("clients.addAddress")}
-        </Button>
+        {canManage && (
+          <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
+            {showForm ? t("common.cancel") : t("clients.addAddress")}
+          </Button>
+        )}
       </div>
 
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
 
-      {showForm && (
+      {canManage && showForm && (
         <AddressForm
           customerId={customerId}
           onDone={() => {
@@ -350,9 +359,11 @@ function AddressesSection({ customerId }: { customerId: string }) {
                   {a.phone ? ` · ${a.phone}` : ""}
                 </p>
               </div>
-              <button type="button" onClick={() => removeAddress(a.id)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
-                <Trash2 className="size-3.5" />
-              </button>
+              {canManage && (
+                <button type="button" onClick={() => removeAddress(a.id)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
             </div>
           ))
         )}

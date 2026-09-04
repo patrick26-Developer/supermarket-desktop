@@ -19,9 +19,11 @@ import { useI18n } from "@/lib/i18n";
 interface CategoriesSectionProps {
   categories: Category[];
   onChanged: () => void;
+  /** CATEGORIES/CREATE+UPDATE+DELETE — masque la création et les icônes d'édition/suppression si absent. */
+  canManage: boolean;
 }
 
-export function CategoriesSection({ categories, onChanged }: CategoriesSectionProps) {
+export function CategoriesSection({ categories, onChanged, canManage }: CategoriesSectionProps) {
   const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -44,10 +46,12 @@ export function CategoriesSection({ categories, onChanged }: CategoriesSectionPr
     <section className="mt-8">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">{t("catalogue.categories")}</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
-          {showForm ? t("common.cancel") : t("catalogue.newCategory")}
-        </Button>
+        {canManage && (
+          <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X className="size-3.5" /> : <Plus className="size-3.5" />}
+            {showForm ? t("common.cancel") : t("catalogue.newCategory")}
+          </Button>
+        )}
       </div>
 
       {showForm && (
@@ -71,12 +75,16 @@ export function CategoriesSection({ categories, onChanged }: CategoriesSectionPr
             className={`flex items-center gap-1.5 rounded-full py-1 pr-1.5 pl-3 text-sm font-medium ${tonePillClasses(c.name)}`}
           >
             <span>{c.name}</span>
-            <button type="button" onClick={() => setEditing(c)} className="p-1 opacity-70 hover:opacity-100" aria-label={t("common.edit")}>
-              <Pencil className="size-3" />
-            </button>
-            <button type="button" onClick={() => setDeleting(c)} className="p-1 opacity-70 hover:text-destructive hover:opacity-100" aria-label={t("common.delete")}>
-              <Trash2 className="size-3" />
-            </button>
+            {canManage && (
+              <>
+                <button type="button" onClick={() => setEditing(c)} className="p-1 opacity-70 hover:opacity-100" aria-label={t("common.edit")}>
+                  <Pencil className="size-3" />
+                </button>
+                <button type="button" onClick={() => setDeleting(c)} className="p-1 opacity-70 hover:text-destructive hover:opacity-100" aria-label={t("common.delete")}>
+                  <Trash2 className="size-3" />
+                </button>
+              </>
+            )}
           </div>
         ))}
       </div>

@@ -47,9 +47,10 @@ interface PurchaseOrdersSectionProps {
   suppliers: Supplier[];
   storeId: string;
   onChanged: () => void;
+  canCreate: boolean;
 }
 
-export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }: PurchaseOrdersSectionProps) {
+export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged, canCreate }: PurchaseOrdersSectionProps) {
   const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -94,13 +95,15 @@ export function PurchaseOrdersSection({ orders, suppliers, storeId, onChanged }:
     <section className="mt-10">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-foreground">{t("purchasing.orders")}</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X /> : <Plus />}
-          {showForm ? t("common.cancel") : t("purchasing.newOrder")}
-        </Button>
+        {canCreate && (
+          <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X /> : <Plus />}
+            {showForm ? t("common.cancel") : t("purchasing.newOrder")}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {canCreate && showForm && (
         <NewPurchaseOrderForm
           suppliers={suppliers}
           storeId={storeId}

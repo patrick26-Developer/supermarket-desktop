@@ -55,6 +55,7 @@ supermarket-desktop/
 │   │   ├── format.ts         # formatCurrency (FCFA), slugify, formatDate
 │   │   ├── category-colors.ts # teinte "spectre" déterministe par nom de catégorie (pastilles, tuiles)
 │   │   ├── category-icons.tsx # icône Lucide déterministe par nom de catégorie (repli ProductAvatar)
+│   │   ├── permissions.ts     # can()/canSeeTab() — gating RBAC des onglets/actions par permission réelle
 │   │   ├── utils.ts          # cn() — helper shadcn (clsx + tailwind-merge)
 │   │   └── i18n/              # I18nProvider/useI18n + dictionnaire fr/en
 │   ├── components/
@@ -91,6 +92,8 @@ supermarket-desktop/
 `src/lib/api.ts` centralise les appels HTTP. URL de base configurable via `VITE_API_URL` (variable Vite, préfixée obligatoirement), défaut `http://localhost:3000/api` (backend en dev local, voir `supermarket-backend/.env` — `PORT=3000`, `API_PREFIX=api`). Le backend a `CORS` ouvert (`origin: true`) donc aucune configuration supplémentaire n'est nécessaire côté client.
 
 Réponse de `POST /auth/login` : `{ accessToken, refreshToken, user: { id, email, firstName, lastName, roles } }`. Le token est gardé en mémoire (`src/lib/auth-store.ts`) et injecté en `Authorization: Bearer` sur tous les appels suivants par `src/lib/api.ts`. **Pas encore fait** : stockage sécurisé (`safeStorage` côté process main — actuellement perdu à chaque redémarrage), refresh automatique du token expiré.
+
+**RBAC côté client** : juste après le login, `App.tsx` appelle `GET /auth/me/permissions` (une fois, pas re-fetché en cours de session) et distribue le résultat à `AppShell` et aux pages — voir `src/lib/permissions.ts`. Chaque onglet/bouton Créer-Modifier-Supprimer n'est affiché que si la permission correspondante est présente ; le backend reste la seule source de vérité (toute vérification côté client est un filtre d'affichage, jamais une garantie de sécurité).
 
 **Magasin courant** : pas d'endpoint `/stores` ni de sélecteur multi-magasin côté backend (V1 mono-magasin assumée, voir `docs/ROADMAP.md` du backend). `src/hooks/use-default-store.ts` dérive le `storeId` de la première caisse active (`GET /cash-registers`) — utilisé par Catalogue, Achats, Clients et Rapports. À revoir le jour où le backend expose plusieurs magasins.
 

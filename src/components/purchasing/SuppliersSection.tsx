@@ -17,9 +17,12 @@ import { useI18n } from "@/lib/i18n";
 interface SuppliersSectionProps {
   suppliers: Supplier[];
   onChanged: () => void;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
 }
 
-export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps) {
+export function SuppliersSection({ suppliers, onChanged, canCreate, canUpdate, canDelete }: SuppliersSectionProps) {
   const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
@@ -49,13 +52,15 @@ export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps
     <section>
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-foreground">{t("purchasing.suppliers")}</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X /> : <Plus />}
-          {showForm ? t("common.cancel") : t("purchasing.newSupplier")}
-        </Button>
+        {canCreate && (
+          <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X /> : <Plus />}
+            {showForm ? t("common.cancel") : t("purchasing.newSupplier")}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {canCreate && showForm && (
         <SupplierForm
           onDone={() => {
             setShowForm(false);
@@ -80,8 +85,8 @@ export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps
         {filtered.map((s) => (
           <div
             key={s.id}
-            onClick={() => setEditing(s)}
-            className="flex cursor-pointer items-start justify-between rounded-lg border border-border bg-card p-3 hover:border-primary/40"
+            onClick={() => canUpdate && setEditing(s)}
+            className={`flex items-start justify-between rounded-lg border border-border bg-card p-3 ${canUpdate ? "cursor-pointer hover:border-primary/40" : ""}`}
           >
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">{s.name}</p>
@@ -90,14 +95,20 @@ export function SuppliersSection({ suppliers, onChanged }: SuppliersSectionProps
                 {s.phone ? ` · ${s.phone}` : ""}
               </p>
             </div>
-            <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
-              <button type="button" onClick={() => setEditing(s)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
-                <Pencil className="size-3.5" />
-              </button>
-              <button type="button" onClick={() => setDeleting(s)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
+            {(canUpdate || canDelete) && (
+              <div className="flex shrink-0 gap-1" onClick={(e) => e.stopPropagation()}>
+                {canUpdate && (
+                  <button type="button" onClick={() => setEditing(s)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
+                    <Pencil className="size-3.5" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button type="button" onClick={() => setDeleting(s)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+                    <Trash2 className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

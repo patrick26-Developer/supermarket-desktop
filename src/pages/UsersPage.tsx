@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, ApiError, type AppUser, type AppUserDetail, type Role } from "@/lib/api";
+import { api, ApiError, type AppUser, type AppUserDetail, type Permission, type Role } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { can } from "@/lib/permissions";
 
 function generatePassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$";
@@ -23,7 +24,7 @@ function generatePassword() {
   return out;
 }
 
-export function UsersPage() {
+export function UsersPage({ permissions }: { permissions: Permission[] }) {
   const { t } = useI18n();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -34,12 +35,21 @@ export function UsersPage() {
   const [resetTarget, setResetTarget] = useState<AppUser | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null);
+  const canCreate = can(permissions, "USERS", "CREATE");
+  const canUpdate = can(permissions, "USERS", "UPDATE");
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [userList, roleList] = await Promise.all([api.users.list(), api.roles.list()]);
+      // Requêtes indépendantes : ROLES n'est accordé qu'aux admins (voir
+      // ROLE_GRANTS côté backend) — un gérant de magasin a USERS:READ mais
+      // pas ROLES:READ, /roles renverrait 403 et ne doit pas faire échouer
+      // le chargement de la liste des utilisateurs.
+      const [userList, roleList] = await Promise.all([
+        api.users.list(),
+        api.roles.list().catch(() => []),
+      ]);
       setUsers(userList);
       setRoles(roleList);
     } catch (err) {
@@ -65,13 +75,15 @@ export function UsersPage() {
           <p className="text-sm font-medium text-primary">{t("users.eyebrow")}</p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("users.title")}</h1>
         </div>
-        <Button onClick={() => setShowForm((v) => !v)}>
-          {showForm ? <X /> : <Plus />}
-          {showForm ? t("common.cancel") : t("users.newUser")}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X /> : <Plus />}
+            {showForm ? t("common.cancel") : t("users.newUser")}
+          </Button>
+        )}
       </div>
 
-      {showForm && (
+      {canCreate && showForm && (
         <NewUserForm
           roles={roles}
           onCreated={(creds) => {
@@ -139,8 +151,8 @@ export function UsersPage() {
               {filtered.map((u) => (
                 <tr
                   key={u.id}
-                  onClick={() => setEditingId(u.id)}
-                  className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
+                  onClick={() => canUpdate && setEditingId(u.id)}
+                  className={`border-b border-border last:border-0 ${canUpdate ? "cursor-pointer hover:bg-secondary/50" : ""}`}
                 >
                   <td className="px-4 py-3 font-medium text-foreground">
                     {u.firstName} {u.lastName}
@@ -150,16 +162,18 @@ export function UsersPage() {
                     <Badge tone={u.status === "ACTIVE" ? "success" : "neutral"}>{u.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-end gap-1.5">
-                      <Button variant="outline" size="sm" onClick={() => setEditingId(u.id)}>
-                        <Pencil className="size-3.5" />
-                        {t("common.details")}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
-                        <KeyRound className="size-3.5" />
-                        {t("users.resetPassword")}
-                      </Button>
-                    </div>
+                    {canUpdate && (
+                      <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="sm" onClick={() => setEditingId(u.id)}>
+                          <Pencil className="size-3.5" />
+                          {t("common.details")}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setResetTarget(u)}>
+                          <KeyRound className="size-3.5" />
+                          {t("users.resetPassword")}
+                        </Button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

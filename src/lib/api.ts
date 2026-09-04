@@ -102,6 +102,12 @@ export interface AuthUser {
   roles: string[];
 }
 
+/** (resource, action) — reflète l'enum PermissionResource/PermissionAction du backend, gardé en string ici (pas d'enum dupliqué côté client). */
+export interface Permission {
+  resource: string;
+  action: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
@@ -406,6 +412,8 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ currentPassword, newPassword }),
       }),
+    /** Permissions effectives (resource, action) du rôle de l'utilisateur connecté. */
+    permissions: () => request<Permission[]>("/auth/me/permissions"),
   },
 
   products: {
