@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCart } from "@/hooks/use-cart";
-import { api, ApiError, type CashierSession, type CashRegister } from "@/lib/api";
+import { api, ApiError, type CashierSession, type CashRegister, type Category } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
@@ -20,6 +20,7 @@ export function CashierPage() {
   const [register, setRegister] = useState<CashRegister | null>(null);
   const [session, setSession] = useState<CashierSession | null>(null);
   const [stockByProduct, setStockByProduct] = useState<Map<string, number>>(new Map());
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [openingAmount, setOpeningAmount] = useState("0");
   const [opening, setOpening] = useState(false);
@@ -33,6 +34,7 @@ export function CashierPage() {
     setStatus("loading");
     setBootError(null);
     try {
+      api.categories.list().then(setCategories).catch(() => {});
       const registers = await api.cashRegisters.list();
       const activeRegister = registers.find((r) => r.status === "ACTIVE") ?? registers[0];
       if (!activeRegister) {
@@ -163,10 +165,12 @@ export function CashierPage() {
     );
   }
 
+  const categoryById = new Map(categories.map((c) => [c.id, c.name]));
+
   return (
     <div className="grid h-full grid-cols-[1fr_22rem] overflow-hidden">
       <div className="overflow-hidden border-r border-border p-6">
-        <ProductSearch stockByProduct={stockByProduct} onAdd={cart.addProduct} />
+        <ProductSearch stockByProduct={stockByProduct} categoryById={categoryById} onAdd={cart.addProduct} />
       </div>
       <div className="flex flex-col overflow-hidden bg-card p-5">
         {lastSale && (
@@ -179,6 +183,7 @@ export function CashierPage() {
         )}
         <CartPanel
           lines={cart.lines}
+          categoryById={categoryById}
           totals={cart.totals}
           onUpdateQuantity={cart.updateQuantity}
           onUpdateUnitPrice={cart.updateUnitPrice}

@@ -98,6 +98,7 @@ export interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string | null;
   roles: string[];
 }
 
@@ -363,8 +364,10 @@ export interface AppUser {
   phone: string | null;
   firstName: string;
   lastName: string;
+  avatarUrl: string | null;
   status: string;
   lastLoginAt: string | null;
+  createdAt: string;
 }
 
 export interface AppUserDetail extends AppUser {
@@ -393,6 +396,18 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
 
+  auth: {
+    /** Profil complet de l'utilisateur connecté — GET /auth/me ne renvoie que le payload JWT. */
+    profile: () => request<AppUserDetail>("/auth/me/profile"),
+    updateProfile: (input: Partial<{ firstName: string; lastName: string; phone: string; avatarUrl: string }>) =>
+      request<AppUserDetail>("/auth/me", { method: "PUT", body: JSON.stringify(input) }),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      request<{ success: true }>("/auth/me/change-password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      }),
+  },
+
   products: {
     search: (query: string) =>
       request<Product[]>(`/products?search=${encodeURIComponent(query)}`),
@@ -405,6 +420,7 @@ export const api = {
 
   uploads: {
     productImage: (file: File) => uploadFile<{ url: string }>("/uploads/product-image", file),
+    avatar: (file: File) => uploadFile<{ url: string }>("/uploads/avatar", file),
   },
 
   categories: {
@@ -501,8 +517,10 @@ export const api = {
     findOne: (id: string) => request<AppUserDetail>(`/users/${id}`),
     create: (input: CreateUserInput) =>
       request<AppUserDetail>("/users", { method: "POST", body: JSON.stringify(input) }),
-    update: (id: string, input: Partial<{ firstName: string; lastName: string; phone: string; status: string }>) =>
-      request<AppUserDetail>(`/users/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+    update: (
+      id: string,
+      input: Partial<{ firstName: string; lastName: string; phone: string; avatarUrl: string; status: string }>,
+    ) => request<AppUserDetail>(`/users/${id}`, { method: "PUT", body: JSON.stringify(input) }),
     resetPassword: (id: string, newPassword: string) =>
       request<{ success: true }>(`/users/${id}/reset-password`, {
         method: "POST",

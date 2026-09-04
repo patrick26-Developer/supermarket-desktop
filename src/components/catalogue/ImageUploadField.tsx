@@ -10,6 +10,7 @@ interface ImageUploadFieldProps {
   value: string;
   onChange: (url: string) => void;
   name: string;
+  categoryName?: string | null;
 }
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/gif";
@@ -19,7 +20,7 @@ const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/gif";
  * sélection de fichier, envoyé à POST /uploads/product-image) ou lien externe
  * collé tel quel — les deux écrivent dans le même champ `imageUrl`.
  */
-export function ImageUploadField({ value, onChange, name }: ImageUploadFieldProps) {
+export function ImageUploadField({ value, onChange, name, categoryName }: ImageUploadFieldProps) {
   const { t } = useI18n();
   const [mode, setMode] = useState<"upload" | "url">("upload");
   const [uploading, setUploading] = useState(false);
@@ -42,7 +43,7 @@ export function ImageUploadField({ value, onChange, name }: ImageUploadFieldProp
 
   return (
     <div className="flex gap-4">
-      <ProductAvatar imageUrl={value || null} name={name} size="lg" />
+      <ProductAvatar imageUrl={value || null} name={name} categoryName={categoryName} size="lg" />
 
       <div className="flex-1 space-y-2">
         <div className="inline-flex rounded-md border border-input p-0.5 text-xs font-medium">

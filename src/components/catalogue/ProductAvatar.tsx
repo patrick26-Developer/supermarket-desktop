@@ -1,20 +1,25 @@
-import { Package } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { resolveAssetUrl } from "@/lib/api";
+import { toneGradientClasses } from "@/lib/category-colors";
+import { iconForCategory } from "@/lib/category-icons";
 
 interface ProductAvatarProps {
   imageUrl: string | null;
   name: string;
+  /** Nom de la catégorie — choisit l'icône et la teinte du repli. */
+  categoryName?: string | null;
   size?: "sm" | "lg";
 }
 
 /**
  * Image du produit si disponible (Product.imageUrl — soit un fichier
  * uploadé, chemin relatif résolu via resolveAssetUrl, soit une URL externe
- * collée telle quelle), sinon une icône générique dans une tuile colorée.
+ * collée telle quelle), sinon une icône représentative de la catégorie sur
+ * fond dégradé teinté (voir category-icons.ts/category-colors.ts) — pas une
+ * icône générique unique pour tout le catalogue.
  */
-export function ProductAvatar({ imageUrl, name, size = "sm" }: ProductAvatarProps) {
+export function ProductAvatar({ imageUrl, name, categoryName, size = "sm" }: ProductAvatarProps) {
   const [failed, setFailed] = useState(false);
   const dim = size === "lg" ? "size-16" : "size-10";
   const iconDim = size === "lg" ? "size-7" : "size-4.5";
@@ -35,11 +40,13 @@ export function ProductAvatar({ imageUrl, name, size = "sm" }: ProductAvatarProp
     );
   }
 
+  const Icon = iconForCategory(categoryName);
+
   return (
     <div
-      className={`flex ${dim} shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-secondary to-secondary/60 text-secondary-foreground`}
+      className={`flex ${dim} shrink-0 items-center justify-center rounded-md text-white ${toneGradientClasses(categoryName ?? name)}`}
     >
-      <Package className={iconDim} />
+      <Icon className={iconDim} />
     </div>
   );
 }

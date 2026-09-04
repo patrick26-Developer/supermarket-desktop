@@ -11,12 +11,14 @@ import { CataloguePage } from "@/pages/CataloguePage";
 import { ClientsPage } from "@/pages/ClientsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 import { PurchasingPage } from "@/pages/PurchasingPage";
 import { ReportsPage } from "@/pages/ReportsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import type { NavTab } from "@/types/nav";
 
-const TAB_PAGES: Record<Exclude<NavTab, "dashboard">, React.ComponentType> = {
+const TAB_PAGES: Record<Exclude<NavTab, "dashboard" | "profile" | "settings">, React.ComponentType> = {
   caisse: CashierPage,
   catalogue: CataloguePage,
   achats: PurchasingPage,
@@ -41,7 +43,14 @@ export function App() {
     setActiveTab("dashboard");
   }
 
-  const TabPage = activeTab === "dashboard" ? null : TAB_PAGES[activeTab];
+  function renderTab() {
+    if (!user) return null;
+    if (activeTab === "dashboard") return <DashboardPage user={user} onNavigate={setActiveTab} />;
+    if (activeTab === "profile") return <ProfilePage user={user} onUserUpdate={setUser} />;
+    if (activeTab === "settings") return <SettingsPage user={user} />;
+    const TabPage = TAB_PAGES[activeTab];
+    return <TabPage />;
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -68,7 +77,7 @@ export function App() {
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <AppShell user={user} activeTab={activeTab} onNavigate={setActiveTab} onLogout={handleLogout}>
-                {TabPage ? <TabPage /> : <DashboardPage user={user} onNavigate={setActiveTab} />}
+                {renderTab()}
               </AppShell>
             </motion.div>
           )}

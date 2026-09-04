@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 
 import logoUrl from "@/assets/images/logo.png";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError, type AuthUser } from "@/lib/api";
@@ -36,6 +37,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const capabilities = [
     { icon: LayoutGrid, label: t("login.cap1") },
@@ -121,7 +123,16 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">{t("login.password")}</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">{t("login.password")}</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  {t("login.forgotPassword")}
+                </button>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -154,6 +165,15 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
           </form>
         </div>
       </div>
+
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("login.forgotPassword")}</DialogTitle>
+          </DialogHeader>
+          <p className="mt-2 text-sm text-muted-foreground">{t("settings.forgotPasswordInfo")}</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

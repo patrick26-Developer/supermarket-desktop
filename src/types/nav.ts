@@ -6,4 +6,6 @@ export type NavTab =
   | "clients"
   | "rapports"
   | "audit"
-  | "users";
+  | "users"
+  | "profile"
+  | "settings";

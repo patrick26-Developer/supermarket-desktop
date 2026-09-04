@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, LoaderCircle, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, LoaderCircle, Package, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { CategoriesSection } from "@/components/catalogue/CategoriesSection";
@@ -21,7 +21,7 @@ import { tonePillClasses } from "@/lib/category-colors";
 import { formatCurrency, slugify } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
-type SortKey = "name" | "costPrice" | "taxRate" | "stock";
+type SortKey = "name" | "costPrice" | "stock";
 type SortDir = "asc" | "desc";
 
 export function CataloguePage() {
@@ -69,27 +69,37 @@ export function CataloguePage() {
 
   const categoryById = new Map(categories.map((c) => [c.id, c.name]));
 
-  function toggleSort(key: SortKey) {
-    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
-
-  const filtered = useMemo(() => {
+  const filteredAndSorted = useMemo(() => {
     let list = products;
     if (categoryFilter) list = list.filter((p) => p.categoryId === categoryFilter);
-    const sorted = [...list].sort((a, b) => {
+    return [...list].sort((a, b) => {
       let cmp = 0;
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
       else if (sortKey === "costPrice") cmp = Number(a.costPrice) - Number(b.costPrice);
-      else if (sortKey === "taxRate") cmp = Number(a.taxRate) - Number(b.taxRate);
       else if (sortKey === "stock") cmp = (stockByProduct.get(a.id) ?? -1) - (stockByProduct.get(b.id) ?? -1);
       return sortDir === "asc" ? cmp : -cmp;
     });
-    return sorted;
   }, [products, categoryFilter, sortKey, sortDir, stockByProduct]);
+
+  // Regroupement par catégorie, dans l'ordre de la liste des catégories —
+  // "bien structuré" plutôt qu'un tableau plat : chaque section est une
+  // catégorie précise, avec ses propres produits en grille.
+  const grouped = useMemo(() => {
+    const byCategory = new Map<string, Product[]>();
+    for (const p of filteredAndSorted) {
+      const key = p.categoryId ?? "__none__";
+      if (!byCategory.has(key)) byCategory.set(key, []);
+      byCategory.get(key)!.push(p);
+    }
+    const sections: { id: string; name: string; products: Product[] }[] = [];
+    for (const c of categories) {
+      if (byCategory.has(c.id)) sections.push({ id: c.id, name: c.name, products: byCategory.get(c.id)! });
+    }
+    if (byCategory.has("__none__")) {
+      sections.push({ id: "__none__", name: t("catalogue.uncategorized"), products: byCategory.get("__none__")! });
+    }
+    return sections;
+  }, [filteredAndSorted, categories, t]);
 
   async function handleDelete() {
     if (!deleting) return;
@@ -103,20 +113,8 @@ export function CataloguePage() {
     }
   }
 
-  function SortTh({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) {
-    const active = sortKey === sortKeyName;
-    return (
-      <th className="px-4 py-3 font-medium">
-        <button type="button" onClick={() => toggleSort(sortKeyName)} className="flex items-center gap-1 hover:text-foreground">
-          {label}
-          {active ? sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" /> : <ArrowUpDown className="size-3 opacity-40" />}
-        </button>
-      </th>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-5xl px-10 py-10">
+    <div className="mx-auto max-w-7xl px-10 py-10">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-primary">{t("catalogue.eyebrow")}</p>
@@ -163,90 +161,104 @@ export function CataloguePage() {
             </option>
           ))}
         </select>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">{t("catalogue.sortBy")}</span>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <option value="name">{t("catalogue.sortName")}</option>
+            <option value="costPrice">{t("catalogue.sortPrice")}</option>
+            <option value="stock">{t("catalogue.sortStock")}</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            className="flex size-9 items-center justify-center rounded-md border border-input text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={sortDir === "asc" ? "Croissant" : "Décroissant"}
+          >
+            {sortDir === "asc" ? <ArrowUpAZ className="size-4" /> : <ArrowDownAZ className="size-4" />}
+          </button>
+        </div>
       </div>
 
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card">
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <LoaderCircle className="size-5 animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
-            <Package className="size-8" />
-            <p className="text-sm">{t("catalogue.noProducts")}</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted-foreground uppercase">
-                <th className="px-4 py-3 font-medium"></th>
-                <SortTh label={t("catalogue.colProduct")} sortKeyName="name" />
-                <th className="px-4 py-3 font-medium">{t("catalogue.colCategory")}</th>
-                <SortTh label={t("catalogue.colCost")} sortKeyName="costPrice" />
-                <SortTh label={t("catalogue.colTax")} sortKeyName="taxRate" />
-                <SortTh label={t("catalogue.colStock")} sortKeyName="stock" />
-                <th className="px-4 py-3 font-medium">{t("common.status")}</th>
-                <th className="px-4 py-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => {
-                const stock = stockByProduct.get(p.id);
-                return (
-                  <tr
-                    key={p.id}
-                    onClick={() => setEditing(p)}
-                    className="cursor-pointer border-b border-border last:border-0 hover:bg-secondary/50"
-                  >
-                    <td className="px-4 py-3">
-                      <ProductAvatar imageUrl={p.imageUrl} name={p.name} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">{p.sku}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {categoryById.get(p.categoryId ?? "") ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${tonePillClasses(categoryById.get(p.categoryId ?? "")!)}`}
+      {loading ? (
+        <div className="mt-10 flex items-center justify-center py-16 text-muted-foreground">
+          <LoaderCircle className="size-5 animate-spin" />
+        </div>
+      ) : filteredAndSorted.length === 0 ? (
+        <div className="mt-10 flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-16 text-center text-muted-foreground">
+          <Package className="size-8" />
+          <p className="text-sm">{t("catalogue.noProducts")}</p>
+        </div>
+      ) : (
+        <div className="mt-8 space-y-10">
+          {grouped.map((section) => (
+            <section key={section.id}>
+              <div className="mb-3 flex items-center gap-2.5">
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tonePillClasses(section.name)}`}>
+                  {section.name}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {section.products.length} {t("catalogue.productsCount")}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {section.products.map((p) => {
+                  const stock = stockByProduct.get(p.id);
+                  const outOfStock = stock !== undefined && stock <= 0;
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => setEditing(p)}
+                      className="group flex cursor-pointer flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-secondary/30"
+                    >
+                      <div className="flex items-start justify-between">
+                        <ProductAvatar imageUrl={p.imageUrl} name={p.name} categoryName={section.name} size="lg" />
+                        <div
+                          className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {categoryById.get(p.categoryId ?? "")}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">{formatCurrency(Number(p.costPrice))}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{Number(p.taxRate)}%</td>
-                    <td className="px-4 py-3">
-                      {stock === undefined ? (
-                        "—"
-                      ) : (
-                        <span className={stock <= 0 ? "text-destructive" : ""}>{stock}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end gap-1">
-                        <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
-                          <Pencil className="size-3.5" />
-                        </button>
-                        <button type="button" onClick={() => setDeleting(p)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
-                          <Trash2 className="size-3.5" />
-                        </button>
+                          <button type="button" onClick={() => setEditing(p)} className="p-1 text-muted-foreground hover:text-primary" aria-label={t("common.details")}>
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button type="button" onClick={() => setDeleting(p)} className="p-1 text-muted-foreground hover:text-destructive" aria-label={t("common.delete")}>
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">{p.sku}</p>
+                        {p.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                        )}
+                      </div>
+                      <div className="mt-auto flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatCurrency(Number(p.costPrice))}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {stock !== undefined && (
+                            <Badge tone={outOfStock ? "destructive" : "neutral"}>
+                              {outOfStock ? t("catalogue.outOfStock") : stock}
+                            </Badge>
+                          )}
+                          <Badge tone={p.status === "ACTIVE" ? "success" : "neutral"}>{p.status}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
 
       {editing && (
         <ProductForm
@@ -309,6 +321,8 @@ function ProductForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const categoryName = categories.find((c) => c.id === categoryId)?.name;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -354,7 +368,7 @@ function ProductForm({
       <div className="mb-4">
         <Label>{t("catalogue.image")}</Label>
         <div className="mt-1.5">
-          <ImageUploadField value={imageUrl} onChange={setImageUrl} name={name || "?"} />
+          <ImageUploadField value={imageUrl} onChange={setImageUrl} name={name || "?"} categoryName={categoryName} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

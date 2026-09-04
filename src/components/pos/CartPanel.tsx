@@ -1,6 +1,7 @@
 import { LoaderCircle, ShoppingCart, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { ProductAvatar } from "@/components/catalogue/ProductAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { useI18n } from "@/lib/i18n";
 
 interface CartPanelProps {
   lines: CartLine[];
+  categoryById: Map<string, string>;
   totals: { subtotal: number; tax: number; total: number };
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onUpdateUnitPrice: (productId: string, unitPrice: number) => void;
@@ -21,6 +23,7 @@ interface CartPanelProps {
 
 export function CartPanel({
   lines,
+  categoryById,
   totals,
   onUpdateQuantity,
   onUpdateUnitPrice,
@@ -58,7 +61,14 @@ export function CartPanel({
             {lines.map((line) => (
               <div key={line.product.id} className="rounded-lg border border-border bg-card p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">{line.product.name}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ProductAvatar
+                      imageUrl={line.product.imageUrl}
+                      name={line.product.name}
+                      categoryName={categoryById.get(line.product.categoryId ?? "")}
+                    />
+                    <p className="truncate text-sm font-medium text-foreground">{line.product.name}</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => onRemove(line.product.id)}

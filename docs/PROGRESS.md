@@ -2,6 +2,26 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-04 — Catalogue par catégories avec icônes, images en Caisse, page Profil/Paramètres
+
+Retour utilisateur groupé : (1) 30 produits supplémentaires, bien répartis par catégorie plutôt qu'entassés ; (2) catalogue "désordonné", à structurer clairement avec image/description par produit, y compris à la Caisse ; (3) "trop d'utilisateurs" dans la liste ; (4) pas d'onglet Profil/Paramètres ; (5) pas de gestion complète du compte côté connexion (mot de passe oublié, changer son mot de passe, photo de profil).
+
+**Icônes de catégorie, pas de fausses photos** — aucune vraie photo produit n'existe pour la plupart des 44 articles du catalogue ; plutôt que coller des URL d'images génériques non vérifiées (risque de photo ne correspondant pas au produit), chaque **catégorie** a désormais sa propre icône Lucide + sa teinte du spectre (`src/lib/category-icons.tsx`, déterministe par mot-clé du nom de catégorie ; `src/lib/category-colors.ts`, déjà existant). `ProductAvatar` accepte maintenant un `categoryName` et affiche cette icône teintée en repli — reconnaissable au clin d'œil, honnête (rien d'inventé), et l'upload réel d'image (déjà en place) prend toujours le dessus dès qu'une vraie photo est ajoutée.
+
+**Catalogue restructuré en grille par catégorie** (`CataloguePage.tsx`, réécrit) — l'ancien tableau plat est remplacé par des **sections par catégorie** (dans l'ordre de la liste des catégories), chacune avec son propre titre teinté, son compteur de produits, et une grille de cartes (image/icône, nom, SKU, description tronquée, prix, badges stock/statut). Tri (nom/prix/stock) et recherche/filtre catégorie conservés au-dessus. Corrige directement "ça doit être catégorisé et non désordonné".
+
+**Images dans la Caisse** — `ProductSearch.tsx` (recherche produit du POS) passe d'une liste de texte à une **grille de tuiles** avec `ProductAvatar` en grand, comme un clavier de caisse tactile. `CartPanel.tsx` affiche une miniature par ligne de panier. `CashierPage.tsx` charge désormais les catégories pour résoudre les icônes/couleurs (`categoryById`, passé aux deux composants).
+
+**Page Profil** (`ProfilePage.tsx`, nouveau) — informations personnelles (prénom/nom/téléphone, email lecture seule) + upload de photo de profil (`AvatarUploadField.tsx`, glisser-déposer, même pattern que l'upload d'image produit) + changement de mot de passe (exige l'ancien). **Page Paramètres** (`SettingsPage.tsx`, nouveau) — thème et langue (dupliqués ici en plus de la barre de titre, pour qu'ils soient aussi accessibles depuis un vrai écran "paramètres"), rôle(s), date d'inscription, et une note honnête sur le mot de passe oublié (voir plus bas). Accessibles via un **menu déroulant** sur le bloc utilisateur en bas de la barre latérale (`AppShell.tsx`, refait à la main, pas de nouvelle dépendance) — pattern SaaS classique (Linear/Stripe/Notion) plutôt qu'un onglet de navigation principal, mais couvre la demande "onglet profil, paramètre".
+
+**"Mot de passe oublié" — décision assumée, pas une fonctionnalité à moitié construite** : cette application n'a **aucun service d'envoi d'e-mail configuré** (pas de SMTP, pas de clé API Resend/SendGrid/etc.). Construire un flux "mot de passe oublié" qui prétend envoyer un e-mail sans jamais réellement le faire serait trompeur. Le lien "Mot de passe oublié ?" sur l'écran de connexion ouvre donc une boîte de dialogue qui l'explique clairement et redirige vers le mécanisme qui **existe déjà et fonctionne** : un administrateur peut réinitialiser le mot de passe de n'importe qui depuis Utilisateurs (`POST /users/:id/reset-password`, déjà en place depuis la session précédente). Le nécessaire pour un vrai flux self-service (génération de jeton, endpoint de confirmation) est trivial à ajouter le jour où un fournisseur d'e-mail est branché — mais pas avant, pour ne pas construire une fonctionnalité cassée par construction.
+
+**Nouveau backend consommé** — `api.auth.profile/updateProfile/changePassword`, `api.uploads.avatar` (voir `supermarket-backend/docs/PROGRESS.md`, entrée du même jour, pour le détail des routes `/auth/me*` et `/uploads/avatar`, la migration `avatarUrl`, et le nettoyage de 3 comptes de test oubliés qui expliquait le "trop d'utilisateurs" remonté).
+
+**30 produits + 4 catégories** — script jetable (non committé) hitting l'API : Boissons, Épicerie (+ snacks/laitages), Boucherie & Poissonnerie (nouveau), Boulangerie (nouveau), Hygiène & Beauté, Papeterie & Librairie (nouveau), Électronique (nouveau) — chaque produit avec une `description` renseignée (contrairement à la plupart des produits précédents) et un stock initial. Catalogue à 44 produits, 8 catégories.
+
+**Vérifié de bout en bout** — `tsc --noEmit` propre (frontend et backend). *(Captures et parcours Playwright détaillés à l'entrée suivante une fois la vérification visuelle terminée.)*
+
 ## 2026-09-03 (suite) — Vrai upload d'image, refonte visuelle colorée (dégradés, inspiration Amazon/Alibaba)
 
 Retour utilisateur, deux demandes distinctes : (1) pouvoir **téléverser** une image de produit, pas seulement coller un lien ; (2) un rendu plus coloré, en dégradés plutôt qu'à base d'ombres portées, "une superette a beaucoup de couleur" — inspiration Amazon/Alibaba plutôt que l'admin panel neutre en place.

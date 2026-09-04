@@ -1,6 +1,8 @@
-import { Loader2, PackageSearch, Plus, Search } from "lucide-react";
+import { Loader2, PackageSearch, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ProductAvatar } from "@/components/catalogue/ProductAvatar";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { api, ApiError, type Product } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
@@ -8,10 +10,16 @@ import { useI18n } from "@/lib/i18n";
 
 interface ProductSearchProps {
   stockByProduct: Map<string, number>;
+  categoryById: Map<string, string>;
   onAdd: (product: Product) => void;
 }
 
-export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
+/**
+ * Grille de tuiles produit (comme un clavier de caisse tactile) plutôt qu'une
+ * simple liste — chaque tuile porte l'image du produit (ou son icône de
+ * catégorie), pour repérer un article au clin d'œil pendant l'encaissement.
+ */
+export function ProductSearch({ stockByProduct, categoryById, onAdd }: ProductSearchProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
@@ -56,7 +64,7 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
 
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-      <div className="mt-4 flex-1 space-y-1.5 overflow-y-auto">
+      <div className="mt-4 flex-1 overflow-y-auto">
         {!loading && results.length === 0 && !error && (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
             <PackageSearch className="size-8" />
@@ -64,36 +72,31 @@ export function ProductSearch({ stockByProduct, onAdd }: ProductSearchProps) {
           </div>
         )}
 
-        {results.map((product) => {
-          const available = stockByProduct.get(product.id);
-          const outOfStock = available !== undefined && available <= 0;
-          return (
-            <button
-              key={product.id}
-              type="button"
-              disabled={outOfStock}
-              onClick={() => onAdd(product)}
-              className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{product.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {product.sku}
-                  {available !== undefined && (
-                    <span className={outOfStock ? "text-destructive" : ""}>
-                      {" "}
-                      · {outOfStock ? t("catalogue.outOfStock") : `${available}`}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                {formatCurrency(Number(product.costPrice))}
-              </span>
-              <Plus className="size-4 shrink-0 text-primary" />
-            </button>
-          );
-        })}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {results.map((product) => {
+            const available = stockByProduct.get(product.id);
+            const outOfStock = available !== undefined && available <= 0;
+            const categoryName = categoryById.get(product.categoryId ?? "");
+            return (
+              <button
+                key={product.id}
+                type="button"
+                disabled={outOfStock}
+                onClick={() => onAdd(product)}
+                className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3 text-center transition-colors hover:border-primary/40 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ProductAvatar imageUrl={product.imageUrl} name={product.name} categoryName={categoryName} size="lg" />
+                <p className="line-clamp-2 text-xs font-medium text-foreground">{product.name}</p>
+                <span className="text-sm font-semibold text-primary">{formatCurrency(Number(product.costPrice))}</span>
+                {available !== undefined && (
+                  <Badge tone={outOfStock ? "destructive" : "neutral"}>
+                    {outOfStock ? t("catalogue.outOfStock") : `${available}`}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

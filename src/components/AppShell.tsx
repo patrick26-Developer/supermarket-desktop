@@ -3,16 +3,19 @@ import {
   FileBarChart,
   LayoutDashboard,
   LogOut,
+  Settings,
   ShieldCheck,
   ShoppingCart,
   Truck,
+  UserCircle,
   UserCog,
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import logoUrl from "@/assets/images/logo.png";
-import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/UserAvatar";
 import type { AuthUser } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { NavTab } from "@/types/nav";
@@ -34,10 +37,6 @@ const NAV_ITEMS: NavItem[] = [
   { tab: "audit", icon: ShieldCheck, labelKey: "nav.audit", available: true },
 ];
 
-function initials(user: AuthUser) {
-  return `${user.firstName[0] ?? ""}${user.lastName[0] ?? ""}`.toUpperCase();
-}
-
 interface AppShellProps {
   user: AuthUser;
   activeTab: NavTab;
@@ -48,10 +47,21 @@ interface AppShellProps {
 
 export function AppShell({ user, activeTab, onNavigate, onLogout, children }: AppShellProps) {
   const { t } = useI18n();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const canManageUsers = user.roles.includes("SUPER_ADMIN") || user.roles.includes("ADMIN");
   const items = canManageUsers
     ? [...NAV_ITEMS, { tab: "users" as NavTab, icon: UserCog, labelKey: "nav.users", available: true }]
     : NAV_ITEMS;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
 
   return (
     <div className="flex h-full bg-background">
@@ -88,22 +98,55 @@ export function AppShell({ user, activeTab, onNavigate, onLogout, children }: Ap
           })}
         </nav>
 
-        <div className="border-t border-border p-3">
-          <div className="flex items-center gap-3 rounded-md px-2 py-2">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-semibold text-primary-foreground">
-              {initials(user)}
+        <div ref={menuRef} className="relative border-t border-border p-3">
+          {menuOpen && (
+            <div className="absolute inset-x-3 bottom-full z-10 mb-1 overflow-hidden rounded-lg border-2 border-border bg-popover">
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate("profile");
+                  setMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-popover-foreground transition-colors hover:bg-secondary"
+              >
+                <UserCircle className="size-4 text-muted-foreground" />
+                {t("nav.profile")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate("settings");
+                  setMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-popover-foreground transition-colors hover:bg-secondary"
+              >
+                <Settings className="size-4 text-muted-foreground" />
+                {t("nav.settings")}
+              </button>
+              <div className="border-t border-border" />
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+              >
+                <LogOut className="size-4" />
+                {t("nav.logout")}
+              </button>
             </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-secondary"
+          >
+            <UserAvatar avatarUrl={user.avatarUrl} firstName={user.firstName} lastName={user.lastName} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
                 {user.firstName} {user.lastName}
               </p>
               <p className="truncate text-xs text-muted-foreground">{user.roles.join(", ")}</p>
             </div>
-          </div>
-          <Button variant="ghost" size="sm" className="mt-1 w-full justify-start" onClick={onLogout}>
-            <LogOut />
-            {t("nav.logout")}
-          </Button>
+          </button>
         </div>
       </aside>
 
