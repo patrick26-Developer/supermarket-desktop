@@ -17,24 +17,30 @@ export function canAny(permissions: Permission[], resource: string, actions: str
 }
 
 /**
- * Permission de lecture qui conditionne l'affichage de chaque onglet —
+ * Permissions de lecture qui conditionnent l'affichage de chaque onglet —
  * `dashboard`/`profile`/`settings` en sont absents, toujours visibles.
  * Reflète ROLE_GRANTS côté backend (src/prisma/seed.ts) : un onglet
- * n'apparaît que si le rôle a au moins un droit de lecture sur son
- * entité principale.
+ * apparaît dès que le rôle a au moins UN des droits de lecture listés (ex.
+ * "achats" regroupe Fournisseurs, Commandes ET Livraisons — un Livreur n'a
+ * que DELIVERIES:READ mais doit quand même voir l'onglet pour accéder à
+ * ses livraisons).
  */
-export const TAB_PERMISSION: Partial<Record<NavTab, { resource: string; action: string }>> = {
-  caisse: { resource: "SALES", action: "READ" },
-  catalogue: { resource: "PRODUCTS", action: "READ" },
-  achats: { resource: "SUPPLIERS", action: "READ" },
-  clients: { resource: "CUSTOMERS", action: "READ" },
-  rapports: { resource: "REPORTS", action: "READ" },
-  audit: { resource: "AUDIT_LOGS", action: "READ" },
-  users: { resource: "USERS", action: "READ" },
+export const TAB_PERMISSION: Partial<Record<NavTab, { resource: string; action: string }[]>> = {
+  caisse: [{ resource: "SALES", action: "READ" }],
+  catalogue: [{ resource: "PRODUCTS", action: "READ" }],
+  achats: [
+    { resource: "SUPPLIERS", action: "READ" },
+    { resource: "PURCHASE_ORDERS", action: "READ" },
+    { resource: "DELIVERIES", action: "READ" },
+  ],
+  clients: [{ resource: "CUSTOMERS", action: "READ" }],
+  rapports: [{ resource: "REPORTS", action: "READ" }],
+  audit: [{ resource: "AUDIT_LOGS", action: "READ" }],
+  users: [{ resource: "USERS", action: "READ" }],
 };
 
 export function canSeeTab(permissions: Permission[], tab: NavTab): boolean {
   const required = TAB_PERMISSION[tab];
   if (!required) return true; // dashboard/profile/settings — toujours visibles
-  return can(permissions, required.resource, required.action);
+  return required.some((r) => can(permissions, r.resource, r.action));
 }

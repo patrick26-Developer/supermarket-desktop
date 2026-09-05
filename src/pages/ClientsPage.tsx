@@ -24,7 +24,13 @@ export function ClientsPage({ permissions }: { permissions: Permission[] }) {
   const canUpdate = can(permissions, "CUSTOMERS", "UPDATE");
 
   async function load() {
-    if (!storeId) return;
+    if (!storeId) {
+      // storeId ne se résout jamais pour un rôle sans CASH_REGISTERS:READ
+      // (Livreur, Caissier, Comptable…) — voir useDefaultStore. Sans ce
+      // garde, `loading` reste bloqué à `true` pour toujours.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

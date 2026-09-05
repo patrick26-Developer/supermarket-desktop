@@ -18,19 +18,28 @@ export function PurchasingPage({ permissions }: { permissions: Permission[] }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const canReadSuppliers = can(permissions, "SUPPLIERS", "READ");
   const canReadOrders = can(permissions, "PURCHASE_ORDERS", "READ");
   const canReadDeliveries = can(permissions, "DELIVERIES", "READ");
 
   async function load() {
-    if (!storeId) return;
+    if (!storeId) {
+      // storeId ne se résout jamais pour un rôle sans CASH_REGISTERS:READ
+      // (Livreur, Caissier, Comptable…) — voir useDefaultStore. Sans ce
+      // garde, `loading` reste bloqué à `true` pour toujours et la page
+      // n'affiche qu'un spinner sans fin.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      // Requêtes indépendantes : un rôle peut avoir SUPPLIERS:READ sans avoir
-      // PURCHASE_ORDERS ou DELIVERIES (ex. Responsable achats n'a pas
-      // DELIVERIES) — un 403 sur l'une ne doit pas faire échouer les autres.
+      // Requêtes indépendantes : un rôle peut n'avoir qu'UN des trois droits
+      // (ex. Livreur n'a que DELIVERIES:READ, pas SUPPLIERS ni
+      // PURCHASE_ORDERS) — un 403 sur l'une ne doit pas faire échouer les
+      // autres.
       const [supplierList, orderList, deliveryList] = await Promise.all([
-        api.suppliers.list(),
+        canReadSuppliers ? api.suppliers.list() : Promise.resolve([]),
         canReadOrders ? api.purchaseOrders.list(storeId) : Promise.resolve([]),
         canReadDeliveries ? api.deliveries.list(storeId) : Promise.resolve([]),
       ]);
@@ -64,15 +73,17 @@ export function PurchasingPage({ permissions }: { permissions: Permission[] }) {
 
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-      <div className="mt-6">
-        <SuppliersSection
-          suppliers={suppliers}
-          onChanged={load}
-          canCreate={can(permissions, "SUPPLIERS", "CREATE")}
-          canUpdate={can(permissions, "SUPPLIERS", "UPDATE")}
-          canDelete={can(permissions, "SUPPLIERS", "DELETE")}
-        />
-      </div>
+      {canReadSuppliers && (
+        <div className="mt-6">
+          <SuppliersSection
+            suppliers={suppliers}
+            onChanged={load}
+            canCreate={can(permissions, "SUPPLIERS", "CREATE")}
+            canUpdate={can(permissions, "SUPPLIERS", "UPDATE")}
+            canDelete={can(permissions, "SUPPLIERS", "DELETE")}
+          />
+        </div>
+      )}
 
       {storeId && canReadOrders && (
         <PurchaseOrdersSection

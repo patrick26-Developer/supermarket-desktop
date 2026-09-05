@@ -89,7 +89,12 @@ export function ReportsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId) {
+      // storeId ne se résout jamais pour un rôle sans CASH_REGISTERS:READ
+      // (Comptable, Responsable ventes…) — voir useDefaultStore.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     Promise.all([

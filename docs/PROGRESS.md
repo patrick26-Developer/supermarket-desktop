@@ -2,6 +2,16 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-05 — Un compte réel par rôle, deux bugs RBAC trouvés en les testant tous
+
+Retour utilisateur : "montre-moi les comptes existants" a révélé que seuls 3 des 11 rôles avaient un compte réel. Un compte de test créé pour chacun des 8 rôles restants (STOCK_MANAGER, PURCHASING_MANAGER, SALES_MANAGER, ACCOUNTANT, DELIVERY_AGENT, AUDITOR, ADMIN, CUSTOMER) — voir la liste complète et les identifiants dans le rapport de session, pas dans ce fichier (mots de passe de test, pas destinés à rester documentés indéfiniment).
+
+**Bug 1 — onglet Achats invisible pour le Livreur** : `TAB_PERMISSION.achats` ne vérifiait que `SUPPLIERS:READ`. Or le Livreur n'a que `DELIVERIES:READ` (ni fournisseurs ni commandes) — il ne voyait donc aucun onglet Achats alors qu'il doit pouvoir consulter ses livraisons. Corrigé : `TAB_PERMISSION` accepte maintenant une **liste** de permissions alternatives par onglet (`achats` = `SUPPLIERS:READ` OU `PURCHASE_ORDERS:READ` OU `DELIVERIES:READ`), et `PurchasingPage`/`SuppliersSection` ne font l'appel `/suppliers` (et n'affichent la section) que si le rôle a bien `SUPPLIERS:READ` — même correction que celle déjà appliquée à `/categories`/`/stock` la session précédente.
+
+**Bug 2 — spinner infini sur Achats/Clients/Rapports pour tout rôle sans accès aux caisses** : `useDefaultStore()` dérive le magasin courant via `GET /cash-registers`, qui exige `CASH_REGISTERS:READ`. Un rôle qui ne l'a pas (Livreur, Caissier, Comptable, Responsable achats/ventes, Gestionnaire de stock…) voit `storeId` rester `null` — et `PurchasingPage`/`ClientsPage`/`ReportsPage` avaient chacune un garde `if (!storeId) return;` **avant** `setLoading(false)`, laissant le spinner tourner indéfiniment plutôt que d'afficher un état vide honnête. Corrigé dans les trois pages : `storeId` manquant met fin au chargement proprement (liste vide affichée) au lieu de bloquer l'interface.
+
+**Trouvé en creusant le bug 2, pas encore corrigé — décision à prendre avec l'utilisateur** : le Caissier lui-même n'a pas `CASH_REGISTERS:READ` dans `ROLE_GRANTS` (`supermarket-backend/src/prisma/seed.ts`), alors que `CashierPage.tsx` appelle `GET /cash-registers` directement pour ouvrir une session de caisse — **le rôle Caissier ne peut donc pas utiliser la Caisse du tout**, confirmé par un appel API direct (403 "Permission manquante : READ sur CASH_REGISTERS"). Ce n'est pas un bug introduit cette session — c'était déjà cassé, juste jamais testé avec un vrai compte Caissier jusqu'à maintenant. Correction proposée mais **pas appliquée** (modification des permissions d'un rôle = décision produit, pas un simple correctif d'affichage) : ajouter `CASH_REGISTERS: ["READ"]` à `ROLE_GRANTS.CASHIER`, et probablement à tout rôle qui a besoin de résoudre un magasin (ce qui règlerait aussi le bug 2 à la racine plutôt qu'en façade).
+
 ## 2026-09-04 (suite) — Interface réellement adaptée au rôle connecté
 
 Retour utilisateur explicite : "attaquer un autre utilisateur [rôle]". Le problème concret constaté : n'importe quel rôle connecté voyait tous les onglets (Achats, Rapports, Audit, Utilisateurs…) et tous les boutons Créer/Modifier/Supprimer, y compris ceux que son rôle ne l'autorise pas à utiliser — seul le backend renvoyait un 403 en silence.
