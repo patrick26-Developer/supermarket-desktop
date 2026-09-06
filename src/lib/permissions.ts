@@ -33,6 +33,14 @@ export const TAB_PERMISSION: Partial<Record<NavTab, { resource: string; action: 
     { resource: "PURCHASE_ORDERS", action: "READ" },
     { resource: "DELIVERIES", action: "READ" },
   ],
+  stock: [
+    { resource: "INVENTORIES", action: "READ" },
+    { resource: "GOODS_RECEIPTS", action: "READ" },
+  ],
+  comptabilite: [
+    { resource: "PAYMENTS", action: "READ" },
+    { resource: "CASH_MOVEMENTS", action: "READ" },
+  ],
   clients: [{ resource: "CUSTOMERS", action: "READ" }],
   rapports: [{ resource: "REPORTS", action: "READ" }],
   audit: [{ resource: "AUDIT_LOGS", action: "READ" }],

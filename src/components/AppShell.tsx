@@ -1,5 +1,6 @@
 import {
   Boxes,
+  ClipboardList,
   FileBarChart,
   LayoutDashboard,
   LogOut,
@@ -10,6 +11,7 @@ import {
   UserCircle,
   UserCog,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +34,8 @@ const NAV_ITEMS: NavItem[] = [
   { tab: "caisse", icon: ShoppingCart, labelKey: "nav.caisse" },
   { tab: "catalogue", icon: Boxes, labelKey: "nav.catalogue" },
   { tab: "achats", icon: Truck, labelKey: "nav.achats" },
+  { tab: "stock", icon: ClipboardList, labelKey: "nav.stock" },
+  { tab: "comptabilite", icon: Wallet, labelKey: "nav.comptabilite" },
   { tab: "clients", icon: Users, labelKey: "nav.clients" },
   { tab: "rapports", icon: FileBarChart, labelKey: "nav.rapports" },
   { tab: "audit", icon: ShieldCheck, labelKey: "nav.audit" },

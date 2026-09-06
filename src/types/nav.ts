@@ -3,6 +3,8 @@ export type NavTab =
   | "caisse"
   | "catalogue"
   | "achats"
+  | "stock"
+  | "comptabilite"
   | "clients"
   | "rapports"
   | "audit"

@@ -1,4 +1,4 @@
-import { Boxes, FileBarChart, LoaderCircle, ShieldCheck, ShoppingCart, TrendingUp, Truck, Users } from "lucide-react";
+import { Boxes, ClipboardList, FileBarChart, LoaderCircle, ShieldCheck, ShoppingCart, TrendingUp, Truck, Users, Wallet } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 
@@ -14,6 +14,8 @@ const MODULES: { tab: NavTab; icon: typeof Boxes; titleKey: string; descKey: str
   { tab: "caisse", icon: ShoppingCart, titleKey: "nav.caisse", descKey: "dashboard.caisseDesc", tint: "bg-gradient-to-br from-spectrum-coral to-spectrum-coral/70" },
   { tab: "catalogue", icon: Boxes, titleKey: "nav.catalogue", descKey: "dashboard.catalogueDesc", tint: "bg-gradient-to-br from-spectrum-amber to-spectrum-amber/70" },
   { tab: "achats", icon: Truck, titleKey: "nav.achats", descKey: "dashboard.achatsDesc", tint: "bg-gradient-to-br from-spectrum-violet to-spectrum-violet/70" },
+  { tab: "stock", icon: ClipboardList, titleKey: "nav.stock", descKey: "dashboard.stockDesc", tint: "bg-gradient-to-br from-spectrum-lime to-spectrum-lime/70" },
+  { tab: "comptabilite", icon: Wallet, titleKey: "nav.comptabilite", descKey: "dashboard.comptabiliteDesc", tint: "bg-gradient-to-br from-spectrum-slate to-spectrum-slate/70" },
   { tab: "clients", icon: Users, titleKey: "nav.clients", descKey: "dashboard.clientsDesc", tint: "bg-gradient-to-br from-spectrum-pink to-spectrum-pink/70" },
   { tab: "rapports", icon: FileBarChart, titleKey: "nav.rapports", descKey: "dashboard.rapportsDesc", tint: "bg-gradient-to-br from-spectrum-teal to-spectrum-teal/70" },
   { tab: "audit", icon: ShieldCheck, titleKey: "nav.audit", descKey: "dashboard.auditDesc", tint: "bg-gradient-to-br from-spectrum-azure to-spectrum-azure/70" },

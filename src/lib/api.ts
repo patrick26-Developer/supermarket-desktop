@@ -263,6 +263,81 @@ export interface CreateGoodsReceiptInput {
   items: { productId: string; quantity: number; unitCost: number }[];
 }
 
+export interface GoodsReceiptItem {
+  id: string;
+  productId: string;
+  quantity: string;
+  unitCost: string;
+  subtotal: string;
+}
+
+export interface GoodsReceipt {
+  id: string;
+  storeId: string;
+  purchaseOrderId: string | null;
+  reference: string;
+  status: string;
+  receivedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  items?: GoodsReceiptItem[];
+}
+
+export interface InventoryCountItem {
+  id: string;
+  productId: string;
+  expectedQty: string;
+  countedQty: string;
+  difference: string;
+}
+
+export interface InventoryCount {
+  id: string;
+  storeId: string;
+  createdById: string;
+  approvedById: string | null;
+  reference: string;
+  status: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  approvedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  items?: InventoryCountItem[];
+}
+
+export interface CreateInventoryCountInput {
+  storeId: string;
+  items: { productId: string; countedQty: number }[];
+  notes?: string;
+}
+
+export interface Payment {
+  id: string;
+  orderId: string | null;
+  saleId: string | null;
+  sessionId: string | null;
+  reference: string;
+  method: string;
+  direction: string;
+  status: string;
+  amount: string;
+  currency: string;
+  transactionRef: string | null;
+  paidAt: string | null;
+  failureReason: string | null;
+  createdAt: string;
+}
+
+export interface CashMovement {
+  id: string;
+  sessionId: string;
+  type: string;
+  amount: string;
+  reason: string | null;
+  createdAt: string;
+}
+
 export interface Delivery {
   id: string;
   orderId: string;
@@ -493,8 +568,28 @@ export const api = {
   },
 
   goodsReceipts: {
+    list: (storeId?: string) => request<GoodsReceipt[]>(`/goods-receipts${storeId ? `?storeId=${storeId}` : ""}`),
+    findOne: (id: string) => request<GoodsReceipt>(`/goods-receipts/${id}`),
     create: (input: CreateGoodsReceiptInput) =>
-      request("/goods-receipts", { method: "POST", body: JSON.stringify(input) }),
+      request<GoodsReceipt>("/goods-receipts", { method: "POST", body: JSON.stringify(input) }),
+  },
+
+  inventoryCounts: {
+    list: (storeId?: string) => request<InventoryCount[]>(`/inventory-counts${storeId ? `?storeId=${storeId}` : ""}`),
+    findOne: (id: string) => request<InventoryCount>(`/inventory-counts/${id}`),
+    create: (input: CreateInventoryCountInput) =>
+      request<InventoryCount>("/inventory-counts", { method: "POST", body: JSON.stringify(input) }),
+    approve: (id: string) => request<InventoryCount>(`/inventory-counts/${id}/approve`, { method: "POST" }),
+    cancel: (id: string) => request<InventoryCount>(`/inventory-counts/${id}/cancel`, { method: "POST" }),
+  },
+
+  payments: {
+    list: (storeId?: string) => request<Payment[]>(`/payments${storeId ? `?storeId=${storeId}` : ""}`),
+    findOne: (id: string) => request<Payment>(`/payments/${id}`),
+  },
+
+  cashMovements: {
+    list: (storeId?: string) => request<CashMovement[]>(`/cash-movements${storeId ? `?storeId=${storeId}` : ""}`),
   },
 
   deliveries: {

@@ -2,6 +2,53 @@
 
 > Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour le contexte technique.
 
+## 2026-09-06 — Deux nouveaux onglets : Inventaire (Stock) et Comptabilité
+
+Retour utilisateur : "assure-toi que tous les rôles ont des interfaces fonctionnelles, et
+décris le rôle/la mission/le principe de chacun." Détail complet côté backend dans
+`supermarket-backend/docs/PROGRESS.md` (même date) et `supermarket-backend/docs/ROLES.md` —
+résumé côté client ici.
+
+**Nouvel onglet `stock`** (`StockPage`, sections `GoodsReceiptsSection` +
+`InventoryCountsSection`) — réceptions de marchandises (liste + création autonome) et
+inventaires physiques (liste + création + approbation + annulation). Visible via
+`INVENTORIES:READ` ou `GOODS_RECEIPTS:READ` — rend enfin utilisables des droits que
+STOCK_MANAGER détenait depuis le début sans aucune interface pour s'en servir (l'onglet
+Achats, seul endroit où une réception existait, lui était invisible faute de droits
+Fournisseurs/Commandes/Livraisons).
+
+**Nouvel onglet `comptabilite`** (`ComptabilitePage`) — paiements + mouvements de caisse,
+**volontairement en lecture seule** (bandeau explicite dans la page) : aucune action de
+création/remboursement de paiement n'existe côté backend, une UI dessus aurait menti sur ce
+que fait réellement le système. Visible via `PAYMENTS:READ` ou `CASH_MOVEMENTS:READ`.
+Nouveaux appels `api.payments.list`, `api.cashMovements.list`, `api.inventoryCounts.*`,
+`api.goodsReceipts.list/findOne` dans `src/lib/api.ts`.
+
+Les deux onglets profitent automatiquement à tout rôle qui détenait déjà les droits
+correspondants (STORE_MANAGER, AUDITOR, ADMIN/SUPER_ADMIN) — aucune modification de
+`ROLE_GRANTS` nécessaire côté client, seul `TAB_PERMISSION` (`src/lib/permissions.ts`) et le
+routage (`App.tsx`, `AppShell.tsx`, `DashboardPage.tsx`) ont changé.
+
+**Vérifié** : `npx tsc --noEmit` propre. Test réel `test.stock.manager@superette.local` —
+sidebar correctement limitée à "Tableau de bord | Catalogue & stock | Inventaire", page Stock
+affiche réceptions et inventaires réels avec badges de statut colorés corrects
+(`REÇUE`/`APPROUVÉ` en vert). Test réel `test.accountant@superette.local` — sidebar limitée à
+"Tableau de bord | Comptabilité | Rapports", page Comptabilité affiche paiements réels
+(références `PAY-…`, statuts `CONFIRMÉ` en vert) et le bandeau lecture seule — voir capture
+`accountant-comptabilite-page.png`.
+
+**Fragilité observée, non corrigée** : le tout premier test après un redémarrage à froid de
+`npm start` a montré une sidebar réduite à "Tableau de bord" seul pour ACCOUNTANT (aucun
+onglet, y compris ceux qu'il avait déjà avant cette session) — `GET /auth/me/permissions`
+avait dû échouer silencieusement au tout premier appel. `handleLoginSuccess` (`App.tsx`)
+avale l'erreur (`catch { setPermissions([]); }`) sans message ni retentative. Reproduit une
+seule fois sur un démarrage à froid, jamais en usage normal ensuite (nouvelle tentative
+immédiatement après : succès complet, capture ci-dessus). Cohérent avec la lenteur/
+instabilité de cet environnement déjà documentée ailleurs, pas un bug de logique de
+permissions. Laissé tel quel : durcir ce point (bannière d'erreur + bouton "réessayer" au
+lieu d'un tableau de bord vide silencieux) serait une amélioration UX raisonnable, pas faite
+ici faute de lien avec la demande initiale.
+
 ## 2026-09-05 — Un compte réel par rôle, deux bugs RBAC trouvés en les testant tous
 
 Retour utilisateur : "montre-moi les comptes existants" a révélé que seuls 3 des 11 rôles avaient un compte réel. Un compte de test créé pour chacun des 8 rôles restants (STOCK_MANAGER, PURCHASING_MANAGER, SALES_MANAGER, ACCOUNTANT, DELIVERY_AGENT, AUDITOR, ADMIN, CUSTOMER) — voir la liste complète et les identifiants dans le rapport de session, pas dans ce fichier (mots de passe de test, pas destinés à rester documentés indéfiniment).

@@ -9,12 +9,14 @@ import { AuditPage } from "@/pages/AuditPage";
 import { CashierPage } from "@/pages/CashierPage";
 import { CataloguePage } from "@/pages/CataloguePage";
 import { ClientsPage } from "@/pages/ClientsPage";
+import { ComptabilitePage } from "@/pages/ComptabilitePage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { PurchasingPage } from "@/pages/PurchasingPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { StockPage } from "@/pages/StockPage";
 import { UsersPage } from "@/pages/UsersPage";
 import type { NavTab } from "@/types/nav";
 
@@ -25,6 +27,8 @@ const TAB_PAGES: Record<
   caisse: CashierPage,
   catalogue: CataloguePage,
   achats: PurchasingPage,
+  stock: StockPage,
+  comptabilite: ComptabilitePage,
   clients: ClientsPage,
   rapports: ReportsPage,
   audit: AuditPage,
